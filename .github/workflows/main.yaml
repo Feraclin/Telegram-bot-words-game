@@ -29,7 +29,8 @@ jobs:
             python-version: 3.11
 
       - name: Install dependencies
-        run: pip install poetry && poetry install
+#        run: pip install poetry && poetry install
+        run: pip install -r requirements.txt
 
       - name: update pythonpath
         run: echo "PYTHONPATH=$PYTHONPATH:/home/runner/work/hw-backend-summer-2022-3-sqlalchemy/hw-backend-summer-2022-3-sqlalchemy" >> $GITHUB_ENV
