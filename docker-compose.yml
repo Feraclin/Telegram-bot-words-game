@@ -1,0 +1,29 @@
+version: '3.3'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    env_file:
+      - ./.env_dev
+    ports:
+      - '5434:5432'
+    volumes:
+      - pgdata:/data
+    networks:
+      - kts_st_week3
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - '6080:8080'
+    networks:
+      - kts_st_week3
+
+volumes:
+  pgdata:
+
+networks:
+  kts_st_week3:
+    driver: bridge

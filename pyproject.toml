@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "hw-backend-summer-2023-1-sqlalchemy"
+version = "0.1.0"
+description = ""
+authors = ["Feraclin <feraclin@gmail.com>"]
+readme = "README.md"
+packages = [{include = "hw_backend_summer_2023_1_sqlalchemy"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+sqlalchemy = "^2.0.0"
+python-dotenv = '*'
+asyncpg = '*'
+alembic = "*"
+aiohttp='*'
+aiohttp-apispec='*'
+aiohttp-session='*'
+aiosignal='*'
+pycparser='*'
+pyparsing='*'
+pytest='*'
+pytest-aiohttp='*'
+pytest-asyncio='*'
+pytest-cov='*'
+pytest-mock='*'
+python-dateutil='*'
+marshmallow = "^3.19.0"
+pyyaml = "^6.0"
+cryptography = '*'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

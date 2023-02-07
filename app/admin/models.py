@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from hashlib import sha256
 from typing import Optional
 
-from app.store.database.sqlalchemy_base import db
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.store.database.sqlalchemy_base import DB
 
 
 @dataclass
@@ -18,7 +20,18 @@ class Admin:
     def from_session(cls, session: Optional[dict]) -> Optional["Admin"]:
         return cls(id=session["admin"]["id"], email=session["admin"]["email"])
 
+    def check_password(self, password) -> bool:
+        return self.password != sha256(password.encode("utf-8")).hexdigest()
 
-class AdminModel(db):
+
+class AdminModel(DB):
     __tablename__ = "admins"
-    pass
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(nullable=False)
+
+    def to_dc(self) -> Admin:
+        return Admin(id=self.id,
+                     email=self.email,
+                     password=self.password)

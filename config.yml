@@ -1,4 +1,4 @@
-user_token: вставьте_ваш_токен_вместо_этой_строки
+user_token: OTY3NmVjYWYtZTJhNC00NzNhLTgwM2YtZGY3OTBkYTM3YWFhXzMyOTQ=
 
 session:
   key: CaY5iCkYtN7DqXdiYK1BvmGrQuaSA4Tl4bEk9my0jc0=
@@ -6,8 +6,8 @@ admin:
   email: admin@admin.com
   password: admin
 database:
-  host: 0.0.0.0
-  port: 5432
+  host: localhost
+  port: 5434
   user: kts_user
   password: kts_pass
   database: kts

@@ -1,4 +1,8 @@
-from aiohttp_apispec import querystring_schema, request_schema, response_schema
+from aiohttp.web_exceptions import HTTPConflict, HTTPNotFound, HTTPBadRequest
+from aiohttp_apispec import querystring_schema, request_schema, response_schema, docs
+from sqlalchemy import select
+
+from app.quiz.models import ThemeModel, Answer
 from app.quiz.schemes import (
     ListQuestionSchema,
     QuestionSchema,
@@ -8,30 +12,70 @@ from app.quiz.schemes import (
 )
 from app.web.app import View
 from app.web.mixins import AuthRequiredMixin
+from app.web.utils import json_response
 
 
 class ThemeAddView(AuthRequiredMixin, View):
+    @docs(tags=["quiz"], summary="Adding Theme", description="Add a new theme if it not exists")
     @request_schema(ThemeSchema)
     @response_schema(ThemeSchema)
     async def post(self):
-        raise NotImplemented
+        title = (await self.request.json())["title"]
+        query = select(ThemeModel.title).where(ThemeModel.title == title)
+        res = await self.request.app.database.execute_query(query)
+        if res.fetchone():
+            raise HTTPConflict()
+        theme = await self.store.quizzes.create_theme(title)
+
+        self.request.app.logger.info(f"added theme: {theme} successful")
+        return json_response(data=ThemeSchema().dump(theme))
 
 
 class ThemeListView(AuthRequiredMixin, View):
+    @docs(tags=["quiz"], summary="Theme's list", description="Returns a list of themes")
     @response_schema(ThemeListSchema)
     async def get(self):
-        raise NotImplemented
+        themes = [ThemeSchema().dump(theme) for theme in await self.store.quizzes.list_themes()]
+        return json_response(data={'themes': themes})
 
 
 class QuestionAddView(AuthRequiredMixin, View):
     @request_schema(QuestionSchema)
     @response_schema(QuestionSchema)
     async def post(self):
-        raise NotImplemented
+        quest = await self.request.json()
+
+        res = await self.request.app.database.execute_query(select(ThemeModel.id)
+                                                            .where(ThemeModel.id == quest.get('theme_id')))
+        if not res.all():
+            raise HTTPNotFound()
+
+        if len(quest.get('answers')) < 2 or len(
+                # проверка на количество правильных ответов
+                [i.get('is_correct') for i in quest.get('answers') if
+                 i.get('is_correct') is True]) != 1:
+            raise HTTPBadRequest()
+
+        res = await self.store.quizzes.create_question(quest.get('title'),
+                                                       quest.get('theme_id'), [
+                                                           Answer(title=i.get('title'),
+                                                                  is_correct=i.get(
+                                                                      'is_correct')) for i in
+                                                           quest.get('answers')])
+        question = res
+        self.request.app.logger.info(f"added theme: {question.title} successful")
+        return json_response(data=QuestionSchema().dump(question))
 
 
 class QuestionListView(AuthRequiredMixin, View):
+    @docs(tags=["quiz"], summary="Question's list", description="Returns a list of all questions")
     @querystring_schema(ThemeIdSchema)
     @response_schema(ListQuestionSchema)
     async def get(self):
-        raise NotImplemented
+        try:
+            theme_id = self.request.query.get("theme_id", None)
+            questions_lst = await self.store.quizzes.list_questions(theme_id=int(theme_id))
+        except:
+            questions_lst = await self.store.quizzes.list_questions()
+        questions = [QuestionSchema().dump(i) for i in questions_lst]
+        return json_response(data={'questions': questions})
