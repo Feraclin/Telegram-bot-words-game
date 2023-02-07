@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Feraclin <feraclin@gmail.com>"]
 readme = "README.md"
-packages = [{include = "hw_backend_summer_2023_1_sqlalchemy"}]
+packages = [{include = ""}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
