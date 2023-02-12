@@ -39,7 +39,7 @@ jobs:
         run: echo "CONFIGPATH=/home/runner/work/hw-backend-summer-2022-3-sqlalchemy/hw-backend-summer-2022-3-sqlalchemy/tests/config.yml" >> $GITHUB_ENV
 
       - name: handle migrations
-        run:  alembic upgrade head
+        run:  poetry run alembic upgrade head
 
       - run: docker run --entrypoint /bin/bash -e GITHUB_REPOSITORY -e GITHUB_REF -e CONFIGPATH=${{ env.CONFIGPATH }} -e PYTHONPATH=${{ env.PYTHONPATH }} --network host --mount src="$(pwd)",target=/go/code/source,type=bind ${{ env.IMAGE }} -c "mv build/main source && ls -lah && cd source && ./main"
 
