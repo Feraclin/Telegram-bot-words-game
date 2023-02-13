@@ -59,12 +59,15 @@ class VkApiAccessor(BaseAccessor):
                 },
             )
         ) as resp:
-            data = (await resp.json())["response"]
-            self.logger.info(data)
-            self.key = data["key"]
-            self.server = data["server"]
-            self.ts = data["ts"]
-            self.logger.info(self.server)
+            if (await resp.json()).get('error', None) is None:
+                data = (await resp.json())["response"]
+                self.logger.info(data)
+                self.key = data["key"]
+                self.server = data["server"]
+                self.ts = data["ts"]
+                self.logger.info(self.server)
+            else:
+                return
 
     async def poll(self):
         async with self.session.get(

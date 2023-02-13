@@ -7,10 +7,10 @@ bot:
   token: group_token
   group_id: 1
 database:
-  host: 0.0.0.0
-  port: 5432
-#  host: localhost
-#  port: 5434
+#  host: 0.0.0.0
+#  port: 5432
+  host: localhost
+  port: 5434
   user: kts_user
   password: kts_pass
   database: kts

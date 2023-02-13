@@ -15,7 +15,7 @@ class AdminLoginView(View):
     async def post(self):
         print(self.data)
         email, password = self.data["email"], self.data["password"]
-        # проверка наличия администратора с данным паролем и валидность пароля
+        # проверка наличия администратора с данным email и валидность пароля
         self.request.app.logger.info(f'{email}, {password}')
 
         if not (admin := await self.request.app.store.admins.get_by_email(email)) or \

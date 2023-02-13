@@ -26,6 +26,7 @@ python-dateutil='*'
 marshmallow = "^3.19.0"
 pyyaml = "^6.0"
 cryptography = '*'
+aiohttp-devtools = "^1.0.post0"
 
 [build-system]
 requires = ["poetry-core"]
