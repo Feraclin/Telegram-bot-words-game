@@ -4,14 +4,17 @@ from app.base.base_accessor import BaseAccessor
 from app.quiz.models import (
     Answer,
     Question,
-    Theme, ThemeModel, QuestionModel, AnswerModel
+    ThemeModel,
+    QuestionModel,
+    AnswerModel
 )
 
 
 class QuizAccessor(BaseAccessor):
     async def create_theme(self, title: str | list[str]) -> ThemeModel | list[ThemeModel]:
         res = await self.app.database.scalars_query(insert(ThemeModel).returning(ThemeModel),
-                                                    [{'title': title}] if type(title) is str else [{'title': i} for i in title])
+                                                    [{'title': title}] if type(title) is str else [{'title': i} for i in
+                                                                                                   title])
         return res.one().to_dc()
 
     async def get_theme_by_title(self, title: str) -> ThemeModel | None:
@@ -45,9 +48,10 @@ class QuizAccessor(BaseAccessor):
 
         question_id = res.one()
 
-        res = await self.app.store.quizzes.create_answers(question_id, answers)
+        await self.app.store.quizzes.create_answers(question_id, answers)
 
-        return (await self.app.database.execute_query(select(QuestionModel).where(QuestionModel.id == question_id))).scalar().to_dc()
+        return (await self.app.database.execute_query(
+            select(QuestionModel).where(QuestionModel.id == question_id))).scalar().to_dc()
 
     async def get_question_by_title(self, title: str) -> QuestionModel | None:
         res = await self.app.database.execute_query(select(QuestionModel).where(QuestionModel.title == title))

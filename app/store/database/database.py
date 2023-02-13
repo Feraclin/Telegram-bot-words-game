@@ -1,9 +1,8 @@
-from asyncio import current_task
 from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_scoped_session, create_async_engine
-from sqlalchemy.orm import declarative_base, DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.store.database import DB
 
@@ -20,18 +19,18 @@ class Database:
                                  username=app.config.database.user,
                                  password=app.config.database.password,
                                  port=app.config.database.port)
-        self._engine: Optional[AsyncEngine] = None
-        self._db: Optional[DeclarativeBase] = None
-        self.session: Optional[AsyncSession, async_scoped_session] = None
+        self.engine_: Optional[AsyncEngine] = None
+        self.db_: Optional[DeclarativeBase] = None
+        self.session: Optional[AsyncSession, async_scoped_session, sessionmaker] = None
 
     async def connect(self, *_: list, **__: dict) -> None:
-        self._db = DB
-        self._engine = create_async_engine(self.URL_DB,
+        self.db_ = DB
+        self.engine_ = create_async_engine(self.URL_DB,
                                            future=True,
                                            echo=True
                                            )
         self.session = sessionmaker(
-            bind=self._engine,
+            bind=self.engine_,
             expire_on_commit=False,
             autoflush=True,
             class_=AsyncSession
@@ -44,7 +43,7 @@ class Database:
         async with self.session() as session:
             res = await session.execute(query)
             await session.commit()
-        await self._engine.dispose()
+        await self.engine_.dispose()
         return res
 
     async def scalars_query(self,
@@ -53,7 +52,7 @@ class Database:
         async with self.session() as session:
             res = await session.scalars(query, values_list)
             await session.commit()
-        await self._engine.dispose()
+        await self.engine_.dispose()
         return res
 
     async def disconnect(self, *_: list, **__: dict) -> None:

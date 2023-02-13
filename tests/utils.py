@@ -23,7 +23,7 @@ def use_inspector(conn):
 
 
 async def check_empty_table_exists(cli, tablename: str):
-    engine: AsyncEngine = cli.app.database._engine
+    engine: AsyncEngine = cli.app.database.engine_
     async with engine.begin() as conn:
         tables = await conn.run_sync(use_inspector)
 

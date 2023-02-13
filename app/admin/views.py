@@ -1,4 +1,4 @@
-from aiohttp.web import HTTPForbidden, HTTPUnauthorized
+from aiohttp.web import HTTPForbidden
 from aiohttp_apispec import request_schema, response_schema, docs
 from aiohttp_session import new_session
 

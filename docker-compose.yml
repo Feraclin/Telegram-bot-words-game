@@ -21,6 +21,19 @@ services:
     networks:
       - kts_st_week3
 
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      - "RABBITMQ_DEFAULT_PASS=pass"
+      - "RABBITMQ_DEFAULT_USER=user"
+    networks:
+      - kts_st_week3
+
 volumes:
   pgdata:
 

@@ -49,8 +49,8 @@ class QuestionModel(DB):
     theme_id: Mapped[int] = mapped_column(ForeignKey('themes.id', ondelete='CASCADE'), nullable=False)
     theme_parent: Mapped[ThemeModel] = relationship(back_populates="questions_children")
     answers: Mapped[list['AnswerModel']] = relationship(back_populates='question_parent',
-                                                                 cascade='all, delete',
-                                                                 lazy='subquery')
+                                                        cascade='all, delete',
+                                                        lazy='subquery')
 
     def to_dc(self) -> Question:
         answers_list = [i.to_dc() for i in self.answers]

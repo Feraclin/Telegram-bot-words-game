@@ -1,10 +1,14 @@
 import typing
 from dataclasses import dataclass
+from dotenv import dotenv_values, find_dotenv
 
 import yaml
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
+
+found_dotenv = find_dotenv(filename='.env')
+config_env = dotenv_values(found_dotenv)
 
 
 @dataclass
@@ -22,6 +26,7 @@ class AdminConfig:
 class BotConfig:
     token: str
     group_id: int
+    tg_token: str | None = None
 
 
 @dataclass
@@ -34,11 +39,17 @@ class DatabaseConfig:
 
 
 @dataclass
+class RabbitMQ:
+    host: str
+
+
+@dataclass
 class Config:
     admin: AdminConfig
     session: SessionConfig = None
     bot: BotConfig = None
     database: DatabaseConfig = None
+    rabbitmq: RabbitMQ = None
 
 
 def setup_config(app: "Application", config_path: str):
@@ -56,6 +67,9 @@ def setup_config(app: "Application", config_path: str):
         bot=BotConfig(
             token=raw_config["bot"]["token"],
             group_id=raw_config["bot"]["group_id"],
+            tg_token=config_env['BOT_TOKEN_TG']
         ),
         database=DatabaseConfig(**raw_config["database"]),
+        rabbitmq=RabbitMQ(
+            host=raw_config["rabbitmq"]["host"],)
     )

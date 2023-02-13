@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
 @middleware
 async def auth_middleware(request: "Request", handler: callable):
     session = await get_session(request)
+    print(session)
     if session:
         request.admin = Admin.from_session(session)
     return await handler(request)

@@ -54,9 +54,9 @@ def db_session(server):
 async def clear_db(server):
     yield
     try:
-        session = AsyncSession(server.database._engine)
+        session = AsyncSession(server.database.engine_)
         connection = session.connection()
-        for table in server.database._db.metadata.tables:
+        for table in server.database.db_.metadata.tables:
             await session.execute(text(f"TRUNCATE {table} CASCADE"))
             await session.execute(text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1"))
 
