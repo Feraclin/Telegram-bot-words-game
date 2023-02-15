@@ -19,7 +19,7 @@ class Store:
         self.admins = AdminAccessor(app)
         self.vk_api = VkApiAccessor(app)
         self.bots_manager = BotManager(app)
-        self.tg_bot = TgBotAccessor(token=app.config.bot.tg_token, n=1, app=app)
+        # self.tg_bot = TgBotAccessor(token=app.config.bot.tg_token, n=1, app=app)
 
 
 def setup_store(app: "Application"):

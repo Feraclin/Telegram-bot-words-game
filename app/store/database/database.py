@@ -1,7 +1,8 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlalchemy import URL
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_scoped_session, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_scoped_session, create_async_engine, \
+    async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.store.database import DB
@@ -19,21 +20,20 @@ class Database:
                                  username=app.config.database.user,
                                  password=app.config.database.password,
                                  port=app.config.database.port)
-        self.engine_: Optional[AsyncEngine] = None
-        self.db_: Optional[DeclarativeBase] = None
-        self.session: Optional[AsyncSession, async_scoped_session, sessionmaker] = None
+        self.engine_: AsyncEngine | None = None
+        self.db_: DeclarativeBase | None = None
+        self.session: AsyncSession | async_scoped_session | sessionmaker | async_sessionmaker | None = None
 
     async def connect(self, *_: list, **__: dict) -> None:
         self.db_ = DB
         self.engine_ = create_async_engine(self.URL_DB,
                                            future=True,
-                                           echo=True
+                                           echo=False
                                            )
-        self.session = sessionmaker(
+        self.session = async_sessionmaker(
             bind=self.engine_,
             expire_on_commit=False,
             autoflush=True,
-            class_=AsyncSession
         )
         # await self.app.store.admins.create_admin(email=self.app.config.admin.email,
         #                                          password=self.app.config.admin.password)

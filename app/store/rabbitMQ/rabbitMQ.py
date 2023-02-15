@@ -88,5 +88,3 @@ class RabbitMQ:
     @staticmethod
     async def on_message(message):
         print("Message body is: %r" % UpdateObj.Schema().load(bson.loads(message.body)))
-
-rabbit = RabbitMQ(host="localhost")
