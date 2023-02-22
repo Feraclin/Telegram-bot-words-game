@@ -3,6 +3,7 @@ import typing
 from app.store.bot_tg.bot_tg import TgBotAccessor
 from app.store.database.database import Database
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
+from app.store.words_game.accessor import WGAccessor
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -17,8 +18,9 @@ class Store:
 
         self.quizzes = QuizAccessor(app)
         self.admins = AdminAccessor(app)
-        self.vk_api = VkApiAccessor(app)
-        self.bots_manager = BotManager(app)
+        # self.vk_api = VkApiAccessor(app)
+        # self.bots_manager = BotManager(app)
+        self.words_game = WGAccessor(app)
         self.tg_bot = TgBotAccessor(token=app.config.bot.tg_token, n=1, app=app)
 
 

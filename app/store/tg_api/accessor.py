@@ -73,6 +73,7 @@ class TgClient:
             'reply_markup': keyboard,
             'parse_mode': "Markdown",
         }
+        print(payload)
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()

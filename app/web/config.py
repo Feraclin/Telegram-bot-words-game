@@ -41,6 +41,7 @@ class DatabaseConfig:
 @dataclass
 class RabbitMQ:
     host: str
+    port: int
 
 
 @dataclass
@@ -71,5 +72,6 @@ def setup_config(app: "Application", config_path: str):
         ),
         database=DatabaseConfig(**raw_config["database"]),
         rabbitmq=RabbitMQ(
-            host=raw_config["rabbitmq"]["host"],)
+            host=raw_config["rabbitmq"]["host"],
+            port=raw_config["rabbitmq"]["port"],)
     )

@@ -6,7 +6,7 @@ from app.quiz.models import (
     Question,
     ThemeModel,
     QuestionModel,
-    AnswerModel
+    AnswerModel, Theme
 )
 
 
@@ -21,9 +21,9 @@ class QuizAccessor(BaseAccessor):
         res = await self.app.database.execute_query(select(ThemeModel).where(ThemeModel.title == title))
         return res.scalar().to_dc()
 
-    async def get_theme_by_id(self, id_: int) -> ThemeModel | None:
+    async def get_theme_by_id(self, id_: int) -> Theme | None:
         res = await self.app.database.execute_query(select(ThemeModel).where(ThemeModel.id == id_))
-        return res.scalar().to_dc()
+        return theme.to_dc() if (theme := res.scalar()) else None
 
     async def list_themes(self) -> list[ThemeModel]:
         res = await self.app.database.execute_query(select(ThemeModel))
@@ -32,26 +32,19 @@ class QuizAccessor(BaseAccessor):
     async def create_answers(self,
                              question_id: int,
                              answers: list[Answer]) -> list[AnswerModel]:
-        res = await self.app.database.scalars_query(insert(AnswerModel).returning(AnswerModel),
-                                                    [{'question_id': question_id,
-                                                      'title': answer.title,
-                                                      'is_correct': answer.is_correct}
-                                                     for answer in answers])
-        return res.all()
+        pass
 
     async def create_question(self,
                               title: str,
                               theme_id: int,
-                              answers: list[Answer]) -> QuestionModel:
-        res = await self.app.database.scalars_query(insert(QuestionModel).returning(QuestionModel.id),
-                                                    [{'title': title, 'theme_id': theme_id}])
-
-        question_id = res.one()
-
-        await self.app.store.quizzes.create_answers(question_id, answers)
-
-        return (await self.app.database.execute_query(
-            select(QuestionModel).where(QuestionModel.id == question_id))).scalar().to_dc()
+                              answers: list[AnswerModel]) -> Question:
+        if isinstance(answers[0], Answer):
+            answers = [AnswerModel(**i.__dict__) for i in answers]
+        question = QuestionModel(title=title,
+                                 theme_id=theme_id,
+                                 answers=answers)
+        await self.app.database.add_query(question)
+        return question.to_dc()
 
     async def get_question_by_title(self, title: str) -> QuestionModel | None:
         res = await self.app.database.execute_query(select(QuestionModel).where(QuestionModel.title == title))

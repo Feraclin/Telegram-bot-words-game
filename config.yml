@@ -16,4 +16,5 @@ bot:
   group_id: 1
 rabbitmq:
   host: localhost
+  port: 5673
 

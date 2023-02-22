@@ -1,3 +1,4 @@
+from asyncio import current_task
 from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import URL
@@ -27,16 +28,16 @@ class Database:
         self.db_ = DB
         self.engine_ = create_async_engine(self.URL_DB,
                                            future=True,
-                                           echo=True
+                                           echo=False
                                            )
-        self.session = sessionmaker(
+        self.session =sessionmaker(
             bind=self.engine_,
             expire_on_commit=False,
             autoflush=True,
             class_=AsyncSession
         )
-        # await self.app.store.admins.create_admin(email=self.app.config.admin.email,
-        #                                          password=self.app.config.admin.password)
+        await self.app.store.admins.create_admin(email=self.app.config.admin.email,
+                                                 password=self.app.config.admin.password)
 
     async def execute_query(self,
                             query):
@@ -54,6 +55,11 @@ class Database:
             await session.commit()
         await self.engine_.dispose()
         return res
+
+    async def add_query(self, model) -> None:
+        async with self.session.begin() as session:
+            session.add(model)
+        await self.engine_.dispose()
 
     async def disconnect(self, *_: list, **__: dict) -> None:
         pass

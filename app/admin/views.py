@@ -17,14 +17,16 @@ class AdminLoginView(View):
         email, password = self.data["email"], self.data["password"]
         # проверка наличия администратора с данным email и валидность пароля
         self.request.app.logger.info(f'{email}, {password}')
+        admin = await self.request.app.store.admins.get_by_email(email)
 
-        if not (admin := await self.request.app.store.admins.get_by_email(email)) or \
-                admin.check_password(password):
+        if not admin or admin.password != password:
             raise HTTPForbidden
         self.request.app.logger.info(admin)
+
         session = await new_session(request=self.request)
         session["admin"] = AdminSchema().dump(admin)
         self.request.app.logger.info("admin login successful")
+
         return json_response(data=AdminSchema().dump(admin))
 
 

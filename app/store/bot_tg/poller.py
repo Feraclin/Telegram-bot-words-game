@@ -34,4 +34,5 @@ class Poller:
         self._task = asyncio.create_task(self._worker())
 
     async def stop(self):
-        self._task.cancel()
+        if self._task:
+            self._task.cancel()

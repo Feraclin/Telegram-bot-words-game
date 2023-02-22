@@ -26,5 +26,7 @@ class TgBotAccessor(BaseAccessor):
         await self.worker.start()
 
     async def disconnect(self, app: "Application"):
-        await self.poller.stop()
-        await self.worker.stop()
+        if self.poller:
+            await self.poller.stop()
+        if self.worker:
+            await self.worker.stop()

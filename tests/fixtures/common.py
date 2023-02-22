@@ -32,7 +32,8 @@ def server():
     app.on_shutdown.clear()
     app.store.vk_api = AsyncMock()
     app.store.vk_api.send_message = AsyncMock()
-
+    app.bots_manager = AsyncMock()
+    app.tg_bot = AsyncMock()
     app.database = Database(app)
     app.on_startup.append(app.database.connect)
     app.on_shutdown.append(app.database.disconnect)
@@ -58,7 +59,7 @@ async def clear_db(server):
         connection = session.connection()
         for table in server.database.db_.metadata.tables:
             await session.execute(text(f"TRUNCATE {table} CASCADE"))
-            await session.execute(text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1"))
+            # await session.execute(text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1"))
 
         await session.commit()
         connection.close()

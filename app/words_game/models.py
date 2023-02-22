@@ -1,0 +1,60 @@
+from dataclasses import dataclass
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
+
+from app.store.database.sqlalchemy_base import DB
+
+
+class User(MappedAsDataclass, DB):
+    __tablename__ = 'users'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(unique=True)
+    username: Mapped[str] = mapped_column(nullable=False)
+
+
+class GameSession(MappedAsDataclass, DB):
+    __tablename__ = 'game_sessions'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
+    user: Mapped[User] = relationship(User, backref='game_sessions')
+    status: Mapped[bool] = mapped_column(nullable=False, default=False)
+
+
+class Team(MappedAsDataclass, DB):
+    __tablename__ = 'teams'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_sessions_id: Mapped[int] = mapped_column(ForeignKey('game_sessions.id', ondelete='CASCADE'))
+    player_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
+    game_session: Mapped[GameSession] = relationship(GameSession, backref='teams')
+    players: Mapped[list[User]] = relationship(User, backref='teams')
+
+
+class Country(MappedAsDataclass, DB):
+    __tablename__ = 'country'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(nullable=False)
+    regions: Mapped[list["Region"]] = relationship("Region", back_populates='country_name')
+
+
+class Region(MappedAsDataclass, DB):
+    __tablename__ = 'region'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(nullable=False)
+    country_id: Mapped[int] = mapped_column(ForeignKey('country.id', ondelete='CASCADE'))
+    cities: Mapped[list["City"]] = relationship("City", back_populates='region_name')
+    country_name: Mapped[Country] = relationship(Country, back_populates='regions', lazy='joined')
+
+
+class City(MappedAsDataclass, DB):
+    __tablename__ = 'city'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(nullable=False)
+    region_id: Mapped[int] = mapped_column(ForeignKey('region.id', ondelete='CASCADE'))
+    region_name: Mapped[Region] = relationship(Region, back_populates='cities', lazy='joined')

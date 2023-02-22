@@ -1,4 +1,5 @@
-from marshmallow import Schema, fields
+from aiohttp.web_exceptions import HTTPBadRequest
+from marshmallow import Schema, fields, pre_load
 
 
 class ThemeSchema(Schema):
@@ -11,6 +12,16 @@ class QuestionSchema(Schema):
     title = fields.Str(required=True)
     theme_id = fields.Int(required=True)
     answers = fields.Nested("AnswerSchema", many=True, required=True)
+
+    @pre_load
+    def check_answers(self, data: dict, **kwargs) -> dict:
+        if len(data.get('answers')) < 2 or len(
+                # проверка на количество правильных ответов
+                [i.get('is_correct') for i in data.get('answers') if
+                 i.get('is_correct') is True]) != 1:
+            raise HTTPBadRequest()
+        return data
+
 
 
 class AnswerSchema(Schema):

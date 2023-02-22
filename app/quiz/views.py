@@ -2,7 +2,7 @@ from aiohttp.web_exceptions import HTTPConflict, HTTPNotFound, HTTPBadRequest
 from aiohttp_apispec import querystring_schema, request_schema, response_schema, docs
 from sqlalchemy import select
 
-from app.quiz.models import ThemeModel, Answer
+from app.quiz.models import ThemeModel, Answer, QuestionModel, AnswerModel
 from app.quiz.schemes import (
     ListQuestionSchema,
     QuestionSchema,
@@ -45,24 +45,16 @@ class QuestionAddView(AuthRequiredMixin, View):
     async def post(self):
         quest = await self.request.json()
 
-        res = await self.request.app.database.execute_query(select(ThemeModel.id)
-                                                            .where(ThemeModel.id == quest.get('theme_id')))
-        if not res.all():
+        if not await self.store.quizzes.get_theme_by_id(quest.get('theme_id')):
             raise HTTPNotFound()
 
-        if len(quest.get('answers')) < 2 or len(
-                # проверка на количество правильных ответов
-                [i.get('is_correct') for i in quest.get('answers') if
-                 i.get('is_correct') is True]) != 1:
-            raise HTTPBadRequest()
-
-        res = await self.store.quizzes.create_question(quest.get('title'),
-                                                       quest.get('theme_id'), [
-                                                           Answer(title=i.get('title'),
-                                                                  is_correct=i.get(
-                                                                      'is_correct')) for i in
-                                                           quest.get('answers')])
-        question = res
+        question = await self.store.quizzes.create_question(title=quest.get('title'),
+                                                            theme_id=quest.get('theme_id'),
+                                                            answers=[
+                                                                AnswerModel(title=i.get('title'),
+                                                                            is_correct=i.get(
+                                                                                'is_correct')) for i in
+                                                                quest.get('answers')])
         self.request.app.logger.info(f"added theme: {question.title} successful")
         return json_response(data=QuestionSchema().dump(question))
 

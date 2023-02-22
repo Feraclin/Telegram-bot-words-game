@@ -28,13 +28,23 @@ class Worker:
             try:
                 match upd.message.text:
                     case '/start':
-                        await self.tg_client.send_message(
+                        keyboard = {'keyboard': [[{"text": "/yes"}, {"text": "/no"}]],
+                                    "resize_keyboard": True,
+                                    "one_time_keyboard": True,
+                                    "selective": True,
+                                    'input_field_placeholder': "You wanna play?"
+                                    }
+                        await self.tg_client.send_keyboard_to_player(
                             upd.message.chat.id,
-                            text=f'{upd.message.from_.username} /pong')
+                            mentinion=f'{upd.message.from_.username} check keyboard',
+                            keyboard=keyboard)
+                    case '/yes':
+                        await self.start_game(user_id=upd.message.from_.id,
+                                              username=upd.message.from_.username,
+                                              chat_id=upd.message.chat.id)
                     case '/stop':
-                        await self.tg_client.send_message(
-                            upd.message.chat.id,
-                            text=f'{upd.message.from_.username} /pong')
+                        await self.stop_game(user_id=upd.message.from_.id,
+                                             chat_id=upd.message.chat.id)
                     case '/ping':
                         await self.tg_client.send_message(
                             upd.message.chat.id,
@@ -74,4 +84,24 @@ class Worker:
 
     async def stop(self):
         for t in self._tasks:
+            print(t)
             t.cancel()
+
+    async def start_game(self, user_id: int, username: str, chat_id: int) -> None:
+        if await self.app.store.words_game.select_active_session_by_id(user_id):
+            await self.tg_client.send_message(
+                chat_id=chat_id,
+                text=f'{username} тебе не много?')
+            return
+        user = await self.app.store.words_game.create_user(user_id=user_id,
+                                                           username=username)
+        await self.app.store.words_game.create_gamesession(user_id=user.id)
+        await self.tg_client.send_message(
+            chat_id=chat_id,
+            text=f"{username} let's play")
+
+    async def stop_game(self, user_id: int, chat_id: int) -> None:
+        if game := await self.app.store.words_game.select_active_session_by_id(user_id):
+            await self.app.store.words_game.update_gamesession(game_id=game.id,
+                                                               status=False)
+

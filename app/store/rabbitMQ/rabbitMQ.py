@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class RabbitMQ:
     def __init__(self, app: 'Application' = None, host: str|None = None):
-        self.url = f"amqp://user:pass@{app.config.rabbitmq.host}/" if app else f"amqp://user:pass@{host}/"
+        self.url = f"amqp://user:pass@{app.config.rabbitmq.host}:{app.config.rabbitmq.port}/" if app else f"amqp://user:pass@{host}/"
         self.exchange: ExchangeType | None = None
         self.connection_: Connection | None = None
         self.listener: asyncio.Task | None = None
@@ -88,5 +88,3 @@ class RabbitMQ:
     @staticmethod
     async def on_message(message):
         print("Message body is: %r" % UpdateObj.Schema().load(bson.loads(message.body)))
-
-rabbit = RabbitMQ(host="localhost")
