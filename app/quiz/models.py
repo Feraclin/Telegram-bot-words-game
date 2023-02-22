@@ -54,8 +54,6 @@ class QuestionModel(DB):
 
     def to_dc(self) -> Question:
         answers_list = [i.to_dc() for i in self.answers]
-        # for i in answers_list:
-        #     i.question_id = self.id
         return Question(id=self.id,
                         title=self.title,
                         theme_id=self.theme_id,
