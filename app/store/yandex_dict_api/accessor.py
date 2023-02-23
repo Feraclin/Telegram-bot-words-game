@@ -10,17 +10,16 @@ from app.store.yandex_dict_api.schemas import Word
 found_dotenv = find_dotenv(filename='.env')
 config_env = dotenv_values(found_dotenv)
 
+
 class YandexDictAccessor(BaseAccessor):
 
     async def check_word(self, text: str, lang: str = 'ru-ru') -> bool:
-        # self.url = f"https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={self.app.config.yandex_dict.token}&lang={lang}&text={text}"
-        self.url = f"https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={config_env['YANDEX_DICT_TOKEN']}&lang={lang}&text={text}"
+        self.url = f"https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={self.app.config.yandex_dict.token}&lang={lang}&text={text}"
 
         async with aiohttp.ClientSession() as session:
             async with session.get(self.url) as resp:
-                if resp.status == 200:
-                    word = await resp.json()
-                    word = Word.Schema().load(word.get('def')[0])
+                if resp.status == 200 and (word:=(await resp.json()).get('def', None)):
+                    word = Word.Schema().load(word[0])
                     print(word)
                     return True
                 else:
@@ -32,14 +31,13 @@ async def check_word(text: str, lang: str = 'ru-ru') -> bool:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
-            if resp.status == 200:
-                word = await resp.json()
-                word = Word.Schema().load(word.get('def')[0])
+            if resp.status == 200 and (word := (await resp.json()).get('def', None)):
+                word = Word.Schema().load(word[0])
                 print(word)
-                return True
+                return True if word.pos == 'noun' else False
             else:
                 return False
 
 
 if __name__ == '__main__':
-   asyncio.run(check_word(text='привет'))
+    asyncio.run(check_word(text='привет'))
