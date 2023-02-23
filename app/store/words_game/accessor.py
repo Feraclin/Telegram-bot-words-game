@@ -1,8 +1,8 @@
-from sqlalchemy import select, insert, update, func
+from sqlalchemy import select, insert, update, func, delete
 from sqlalchemy.dialects.postgresql import insert as psg_insert
 
 from app.base.base_accessor import BaseAccessor
-from app.words_game.models import GameSession, User, City
+from app.words_game.models import GameSession, User, City, UsedCity
 from random import choice, randint
 
 
@@ -10,13 +10,20 @@ class WGAccessor(BaseAccessor):
 
     async def select_active_session_by_id(self, user_id: int) -> GameSession | None:
 
-        query = select(GameSession).where(GameSession.user_id == user_id, GameSession.status == True)
+        query = select(GameSession).where(GameSession.user_id == user_id,
+                                          GameSession.status == True)
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
-    async def create_gamesession(self, user_id: int) -> GameSession:
+    async def create_gamesession(self,
+                                 user_id: int,
+                                 chat_id: int,
+                                 chat_type: str) -> GameSession:
 
-        query = insert(GameSession).values(user_id=user_id, status=True)
+        query = insert(GameSession).values(user_id=user_id,
+                                           chat_id=chat_id,
+                                           game_type=chat_type,
+                                           status=True)
         res = await self.app.database.execute_query(query)
         return res.scalar()
 
@@ -24,14 +31,25 @@ class WGAccessor(BaseAccessor):
                                  game_id: int,
                                  status: bool = True,
                                  next_letter: str | None = None) -> GameSession | None:
+
         query = update(GameSession).where(GameSession.id == game_id).values(status=status,
                                                                             next_start_letter=next_letter)\
             .returning(GameSession)
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
-    async def create_user(self, user_id: int, username: str) -> None:
-        query = psg_insert(User).values(id=user_id, username=username).returning(User)
+    async def delete_gamesession(self, chat_id: int) -> None:
+        query = delete(GameSession).where(GameSession.chat_id == chat_id)
+
+        res = await self.app.database.execute_query(query)
+        return res.scalar()
+
+    async def create_user(self,
+                          user_id: int,
+                          username: str) -> None:
+
+        query = psg_insert(User).values(id=user_id,
+                                        username=username).returning(User)
         query = query.on_conflict_do_nothing()
         res = (await self.app.database.execute_query(query)).scalar()
         if res:
@@ -44,18 +62,40 @@ class WGAccessor(BaseAccessor):
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
-    async def get_city_by_first_letter(self, letter: str | None = None) -> str | None:
+    async def get_city_by_first_letter(self,
+                                       game_session_id: int,
+                                       letter: str | None = None,
+                                       city_count: int | None = None) -> City | None:
         if not letter:
 
             letter = choice(list("АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЭЮЯ"))
         query = select(func.count(City.id)).where(City.name.like(f"{letter}%"))
-        city_count = (await self.app.database.execute_query(query)).scalar()
+        city_count = city_count if city_count else (await self.app.database.execute_query(query)).scalar()
         query = select(City).where(City.name.like(f"{letter}%")).offset(randint(0, city_count)).limit(1)
         res = await self.app.database.execute_query(query)
-        return res.scalar_one_or_none()
+        city = res.scalar_one_or_none()
+        if await self.check_city_in_used(city.id, game_session_id):
+            return await self.get_city_by_first_letter(game_session_id=game_session_id,
+                                                       letter=letter,
+                                                       city_count=city_count)
+        else:
+            return city
 
     async def get_city_by_name(self, name: str) -> str | None:
         queue = select(City).where(City.name == name)
         res = await self.app.database.execute_query(queue)
-        print(a := res.scalar_one_or_none())
+        print(a := res.scalar())
         return a
+
+    async def check_city_in_used(self, city_id: int, game_session_id: int) -> bool:
+        queue = select(UsedCity).where(UsedCity.city_id == city_id, UsedCity.game_session_id == game_session_id)
+        res = await self.app.database.execute_query(queue)
+        double_city = res.scalar_one_or_none()
+        print(double_city, "проверка")
+        return True if double_city else False
+
+    async def set_city_to_used(self, city_id: int, game_session_id: int) -> None:
+
+        queue = insert(UsedCity).values(city_id=city_id, game_session_id=game_session_id)
+        res = await self.app.database.execute_query(queue)
+        return

@@ -34,15 +34,16 @@ class Worker:
                                     "selective": True,
                                     'input_field_placeholder': "You wanna play?"
                                     }
-                        await self.tg_client.send_keyboard_to_player(
-                            upd.message.chat.id,
-                            mentinion=f'{upd.message.from_.username} check keyboard',
-                            keyboard=keyboard)
-                    case '/yes':
-                        await self.start_game(user_id=upd.message.from_.id,
-                                              username=upd.message.from_.username,
-                                              chat_id=upd.message.chat.id)
-                    case '/stop':
+                        if upd.message.chat.type == 'private':
+                            await self.tg_client.send_keyboard_to_player(
+                                upd.message.chat.id,
+                                mentinion=f'Check keyboard',
+                                keyboard=keyboard)
+                        else:
+                            await self.chose_your_team(upd)
+                    case '/yes' if upd.message.chat.type == 'private':
+                        await self.start_game(upd)
+                    case '/stop' if upd.message.chat.type == 'private':
                         await self.stop_game(user_id=upd.message.from_.id,
                                              chat_id=upd.message.chat.id,
                                              username=upd.message.from_.username)
@@ -94,21 +95,26 @@ class Worker:
             print(t)
             t.cancel()
 
-    async def start_game(self, user_id: int, username: str, chat_id: int) -> None:
-        if await self.app.store.words_game.select_active_session_by_id(user_id):
+    async def start_game(self, upd: UpdateObj) -> None:
+        if await self.app.store.words_game.select_active_session_by_id(upd.message.from_.id):
             await self.tg_client.send_message(
-                chat_id=chat_id,
-                text=f'{username} тебе не много?')
+                chat_id=upd.message.chat.id,
+                text=f'{upd.message.from_.username} тебе не много?')
             return
-        user = await self.app.store.words_game.create_user(user_id=user_id,
-                                                           username=username)
-        await self.app.store.words_game.create_gamesession(user_id=user.id)
+        user = await self.app.store.words_game.create_user(user_id=upd.message.from_.id,
+                                                           username=upd.message.from_.username)
+        await self.app.store.words_game.create_gamesession(user_id=user.id,
+                                                           chat_id=upd.message.chat.id,
+                                                           chat_type=upd.message.chat.type)
         await self.tg_client.send_message(
-            chat_id=chat_id,
-            text=f"{username} let's play")
-        await self.pick_cityname(user_id=user_id,
-                                 chat_id=chat_id,
-                                 username=username)
+            chat_id=upd.message.chat.id,
+            text=f"{upd.message.from_.username} let's play")
+        if upd.message.chat.type == 'private':
+            await self.pick_cityname(user_id=upd.message.from_.id,
+                                     chat_id=upd.message.chat.id,
+                                     username=upd.message.from_.username)
+        else:
+            await self.chose_your_team(chat_id=upd.message.chat.id,)
 
     async def stop_game(self, user_id: int, chat_id: int, username: str) -> None:
         if game := await self.app.store.words_game.select_active_session_by_id(user_id):
@@ -123,11 +129,16 @@ class Worker:
                             chat_id: int,
                             username: str,
                             letter: str|None = None) -> None:
-        city = await self.app.store.words_game.get_city_by_first_letter(letter=letter)
-        first_letter = (city.name[-1] if city.name[-1] not in 'ьыъйё' else city.name[-2]).capitalize()
+
         game = await self.app.store.words_game.select_active_session_by_id(user_id)
+        city = await self.app.store.words_game.get_city_by_first_letter(letter=letter, game_session_id=game.id)
+
+        first_letter = (city.name[-1] if city.name[-1] not in 'ьыъйё' else city.name[-2]).capitalize()
+
         await self.app.store.words_game.update_gamesession(game_id=game.id,
                                                            next_letter=first_letter)
+        await self.app.store.words_game.set_city_to_used(city_id=city.id,
+                                                         game_session_id=game.id)
         await self.tg_client.send_message(
                 chat_id=chat_id,
                 text=f"""{username} {city.name}
@@ -138,14 +149,22 @@ class Worker:
                              chat_id: int,
                              username: str,
                              city_name: str) -> None:
-        if city := await self.app.store.words_game.get_city_by_name(city_name[1:].capitalize()):
+        if city := await self.app.store.words_game.get_city_by_name(city_name.strip('/').capitalize()):
             letter = (city.name[-1] if city.name[-1] not in 'ьыъйё' else city.name[-2]).capitalize()
 
             game = await self.app.store.words_game.select_active_session_by_id(user_id)
 
+            if await self.app.store.words_game.check_city_in_used(city_id=city.id,
+                                                                  game_session_id=game.id):
+                await self.tg_client.send_message(
+                    chat_id=chat_id,
+                    text=f'{username} {city.name}, Был такой город.')
+                return
             if game.next_start_letter == city_name[1]:
                 await self.app.store.words_game.update_gamesession(game_id=game.id,
                                                                    next_letter=letter)
+                await self.app.store.words_game.set_city_to_used(city_id=city.id,
+                                                                 game_session_id=game.id)
                 await self.tg_client.send_message(
                     chat_id=chat_id,
                     text=f'{username} {city.name} Есть такой город. Мне на {letter}')
@@ -161,3 +180,15 @@ class Worker:
             await self.tg_client.send_message(
                 chat_id=chat_id,
                 text=f'{username} {city_name} Нет такого города')
+
+    async def chose_your_team(self, upd: UpdateObj) -> None:
+        keyboard = {'inline_keyboard': [
+            [{"text": "Yes", 'callback_data': '/yes'},
+             {"text": "No", 'callback_data': '/no'}]
+        ],
+            "resize_keyboard": True,
+            "one_time_keyboard": True
+        }
+        await self.tg_client.send_keyboard(upd.message.chat.id,
+                                           text=f'Будешь играть?',
+                                           keyboard=keyboard)

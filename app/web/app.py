@@ -52,7 +52,7 @@ class View(AiohttpView):
         return self.request.get("data", {})
 
 
-app = Application()
+app = Application(debug=True)
 
 
 def setup_app(config_path: str) -> Application:

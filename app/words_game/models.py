@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from typing import List
 
 from sqlalchemy import ForeignKey
+from sqlalchemy import types
 from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
 
 from app.store.database.sqlalchemy_base import DB
@@ -17,7 +19,9 @@ class GameSession(MappedAsDataclass, DB):
     __tablename__ = 'game_sessions'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-
+    game_type: Mapped[str] = mapped_column(nullable=False)
+    chat_id: Mapped[int] = mapped_column(nullable=False)
+    words: Mapped[str] = mapped_column(nullable=True)
     next_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
     next_user: Mapped[User] = relationship(User, lazy='joined', foreign_keys=[next_user_id])
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=True)

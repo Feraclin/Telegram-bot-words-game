@@ -24,11 +24,13 @@ class Poller:
             res = await self.tg_client.get_updates_in_objects(offset=offset, timeout=20)
             for u in res.result:
                 offset = u.update_id + 1
-                print(f"worker text: {u.message.text}" if u.message else f'worker text:{u.callback_query.message.text}')
+                if not u.message or u.callback_query:
+                    continue
+                print(f"worker text: {u.message.text}" if u.message else f'worker text:{u.callback_query}')
                 upd = UpdateObj.Schema().dump(u)
                 self.app.logger.info(u)
                 await self.app.rabbitMQ.send_event(message=upd)
-                await asyncio.sleep(1/2)
+                await asyncio.sleep(1/20)
 
     async def start(self):
         self._task = asyncio.create_task(self._worker())
