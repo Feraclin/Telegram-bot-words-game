@@ -20,8 +20,13 @@ class WGAccessor(BaseAccessor):
         res = await self.app.database.execute_query(query)
         return res.scalar()
 
-    async def update_gamesession(self, game_id: int, status: bool) -> GameSession | None:
-        query = update(GameSession).where(GameSession.id == game_id).values(status=status).returning(GameSession)
+    async def update_gamesession(self,
+                                 game_id: int,
+                                 status: bool = True,
+                                 next_letter: str | None = None) -> GameSession | None:
+        query = update(GameSession).where(GameSession.id == game_id).values(status=status,
+                                                                            next_start_letter=next_letter)\
+            .returning(GameSession)
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
@@ -50,7 +55,7 @@ class WGAccessor(BaseAccessor):
         return res.scalar_one_or_none()
 
     async def get_city_by_name(self, name: str) -> str | None:
-        queue = select(City.name).where(City.name == name)
+        queue = select(City).where(City.name == name)
         res = await self.app.database.execute_query(queue)
-        print(a:=res.scalar())
+        print(a := res.scalar_one_or_none())
         return a
