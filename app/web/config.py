@@ -45,12 +45,19 @@ class RabbitMQ:
 
 
 @dataclass
+class YandexDictConfig:
+    token: str
+
+
+
+@dataclass
 class Config:
     admin: AdminConfig
     session: SessionConfig = None
     bot: BotConfig = None
     database: DatabaseConfig = None
     rabbitmq: RabbitMQ = None
+    yandex_dict: YandexDictConfig = None
 
 
 def setup_config(app: "Application", config_path: str):
@@ -73,5 +80,8 @@ def setup_config(app: "Application", config_path: str):
         database=DatabaseConfig(**raw_config["database"]),
         rabbitmq=RabbitMQ(
             host=raw_config["rabbitmq"]["host"],
-            port=raw_config["rabbitmq"]["port"],)
+            port=raw_config["rabbitmq"]["port"],),
+        yandex_dict=YandexDictConfig(
+            token=config_env['YANDEX_DICT_TOKEN'],
+        ),
     )
