@@ -44,11 +44,18 @@ class Worker:
                                               chat_id=upd.message.chat.id)
                     case '/stop':
                         await self.stop_game(user_id=upd.message.from_.id,
-                                             chat_id=upd.message.chat.id)
+                                             chat_id=upd.message.chat.id,
+                                             username=upd.message.from_.username)
                     case '/ping':
                         await self.tg_client.send_message(
                             upd.message.chat.id,
                             text=f'{upd.message.from_.username} /pong')
+                    case _:
+                        if game := await self.app.store.words_game.select_active_session_by_id(user_id=upd.message.from_.id):
+                            await self.check_cityname(user_id=upd.message.from_.id,
+                                                      chat_id=upd.message.chat.id,
+                                                      username=upd.message.from_.username,
+                                                      city=upd.message.text)
             except IntegrityError as e:
                 self.app.logger.info(f'start {e}')
 
@@ -99,9 +106,44 @@ class Worker:
         await self.tg_client.send_message(
             chat_id=chat_id,
             text=f"{username} let's play")
+        await self.pick_cityname(user_id=user_id,
+                                 chat_id=chat_id,
+                                 username=username)
 
-    async def stop_game(self, user_id: int, chat_id: int) -> None:
+    async def stop_game(self, user_id: int, chat_id: int, username: str) -> None:
         if game := await self.app.store.words_game.select_active_session_by_id(user_id):
             await self.app.store.words_game.update_gamesession(game_id=game.id,
                                                                status=False)
+            await self.tg_client.send_message(
+                chat_id=chat_id,
+                text=f'{username} sad troumbone')
 
+    async def pick_cityname(self,
+                            user_id: int,
+                            chat_id: int,
+                            username: str,
+                            letter: str|None = None) -> None:
+        city = await self.app.store.words_game.get_city_by_first_letter(letter=letter)
+        await self.tg_client.send_message(
+                chat_id=chat_id,
+                text=f"""{username} {city.name}
+                Тебе на {(city.name[-1] if city.name[-1] != 'ь' else city.name[-2]).capitalize()}""")
+
+    async def check_cityname(self,
+                             user_id: int,
+                             chat_id: int,
+                             username: str,
+                             city: str) -> None:
+        if city := await self.app.store.words_game.get_city_by_name(city[1:].capitalize()):
+            letter = (city[-1] if city[-1] != "ь" else city[-2]).capitalize()
+            await self.tg_client.send_message(
+                chat_id=chat_id,
+                text=f'{username} {city} Есть такой город. Мне на {letter}')
+            await self.pick_cityname(user_id=user_id,
+                                     chat_id=chat_id,
+                                     username=username,
+                                     letter=letter)
+        else:
+            await self.tg_client.send_message(
+                chat_id=chat_id,
+                text=f'{username} {city.capitalize()} Нет такого города')
