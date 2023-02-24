@@ -13,7 +13,7 @@ config_env = dotenv_values(found_dotenv)
 
 class YandexDictAccessor(BaseAccessor):
 
-    async def check_word(self, text: str, lang: str = 'ru-ru') -> bool:
+    async def check_word_(self, text: str, lang: str = 'ru-ru') -> bool:
         self.url = f"https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={self.app.config.yandex_dict.token}&lang={lang}&text={text}"
 
         async with aiohttp.ClientSession() as session:

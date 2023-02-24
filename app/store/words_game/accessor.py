@@ -2,16 +2,23 @@ from sqlalchemy import select, insert, update, func, delete
 from sqlalchemy.dialects.postgresql import insert as psg_insert
 
 from app.base.base_accessor import BaseAccessor
-from app.words_game.models import GameSession, User, City, UsedCity
+from app.words_game.models import GameSession, User, City, UsedCity, Team
 from random import choice, randint
 
 
 class WGAccessor(BaseAccessor):
 
-    async def select_active_session_by_id(self, user_id: int) -> GameSession | None:
-
-        query = select(GameSession).where(GameSession.user_id == user_id,
-                                          GameSession.status == True)
+    async def select_active_session_by_id(self,
+                                          user_id: int | None = None,
+                                          chat_id: int | None = None) -> GameSession | None:
+        if user_id:
+            query = select(GameSession).where(GameSession.user_id == user_id,
+                                              GameSession.status == True)
+        elif chat_id:
+            query = select(GameSession).where(GameSession.chat_id == chat_id,
+                                              GameSession.status == True)
+        else:
+            return None
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
@@ -74,6 +81,8 @@ class WGAccessor(BaseAccessor):
         query = select(City).where(City.name.like(f"{letter}%")).offset(randint(0, city_count)).limit(1)
         res = await self.app.database.execute_query(query)
         city = res.scalar_one_or_none()
+        if not city:
+            return await self.app.store.tg_bot.worker.bot_looser(game_session_id=game_session_id)
         if await self.check_city_in_used(city.id, game_session_id):
             return await self.get_city_by_first_letter(game_session_id=game_session_id,
                                                        letter=letter,
@@ -99,3 +108,15 @@ class WGAccessor(BaseAccessor):
         queue = insert(UsedCity).values(city_id=city_id, game_session_id=game_session_id)
         res = await self.app.database.execute_query(queue)
         return
+
+    async def add_user_to_team(self, user_id: int, game_id: int) -> None:
+        query = psg_insert(Team).values(user_id=user_id, game_id=game_id)
+        query = query.on_conflict_do_nothing()
+        res = await self.app.database.execute_query(query)
+        return
+
+    async def get_team_by_game_id(self, game_session_id: int) -> list[int]:
+        query = select(Team.player_id).where(Team.game_sessions_id == game_session_id)
+        res = await self.app.database.execute_query(query)
+        team_lst = res.scalars().all()
+        return team_lst

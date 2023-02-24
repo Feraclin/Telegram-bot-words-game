@@ -36,11 +36,12 @@ class TgClient:
         except* ValueError as e:
             print(f"Failed to load schema {e}")
 
-    async def send_message(self, chat_id: int, text: str) -> SendMessageResponse:
+    async def send_message(self, chat_id: int, text: str, force_reply: bool = False) -> SendMessageResponse:
         url = self.get_url("sendMessage")
         payload = {
             'chat_id': chat_id,
-            'text': text
+            'text': text,
+            'force_reply': force_reply
         }
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:

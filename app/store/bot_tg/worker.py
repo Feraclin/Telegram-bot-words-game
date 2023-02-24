@@ -1,6 +1,7 @@
 # Структура бота из статьи https://habr.com/ru/company/kts/blog/598575/
 
 import asyncio
+from random import choice
 from typing import TYPE_CHECKING
 
 import aio_pika
@@ -9,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.store.tg_api.accessor import TgClient
 from app.store.tg_api.schemes import UpdateObj
+from app.words_game.models import GameSession
 
 if TYPE_CHECKING:
     from app.web.app import Application
@@ -27,7 +29,7 @@ class Worker:
         if upd.message:
             try:
                 match upd.message.text:
-                    case '/start':
+                    case '/play':
                         keyboard = {'keyboard': [[{"text": "/yes"}, {"text": "/no"}]],
                                     "resize_keyboard": True,
                                     "one_time_keyboard": True,
@@ -43,14 +45,20 @@ class Worker:
                             await self.chose_your_team(upd)
                     case '/yes' if upd.message.chat.type == 'private':
                         await self.start_game(upd)
-                    case '/stop' if upd.message.chat.type == 'private':
-                        await self.stop_game(user_id=upd.message.from_.id,
-                                             chat_id=upd.message.chat.id,
-                                             username=upd.message.from_.username)
+                    case '/yes':
+                        pass
+                    case '/stop':
+                        await self.stop_game(upd=upd)
                     case '/ping':
                         await self.tg_client.send_message(
                             upd.message.chat.id,
                             text=f'{upd.message.from_.username} /pong')
+                    case '/help':
+                        await self.tg_client.send_message(
+                            upd.message.chat.id,
+                            text=f'Список команд:\n /play - запустить игру,\n /stop - остановить игру,\n /ping проверка работы,\n /help - справка.\n При ответе город или слово следует вводить как команду начиная с /')
+                    case _ if upd.message.chat.type != 'private':
+                        await self.check_word(upd=upd)
                     case _:
                         if game := await self.app.store.words_game.select_active_session_by_id(user_id=upd.message.from_.id):
                             await self.check_cityname(user_id=upd.message.from_.id,
@@ -114,15 +122,15 @@ class Worker:
                                      chat_id=upd.message.chat.id,
                                      username=upd.message.from_.username)
         else:
-            await self.chose_your_team(chat_id=upd.message.chat.id,)
+            await self.chose_your_team(upd=upd)
 
-    async def stop_game(self, user_id: int, chat_id: int, username: str) -> None:
-        if game := await self.app.store.words_game.select_active_session_by_id(user_id):
+    async def stop_game(self, upd: UpdateObj) -> None:
+        if game := await self.app.store.words_game.select_active_session_by_id(chat_id=upd.message.chat.id):
             await self.app.store.words_game.update_gamesession(game_id=game.id,
                                                                status=False)
             await self.tg_client.send_message(
-                chat_id=chat_id,
-                text=f'{username} sad troumbone')
+                chat_id=upd.message.chat.id,
+                text=f'{upd.message.from_.username} sad troumbone')
 
     async def pick_cityname(self,
                             user_id: int,
@@ -189,6 +197,55 @@ class Worker:
             "resize_keyboard": True,
             "one_time_keyboard": True
         }
+        await self.app.store.words_game.create_gamesession(user_id=upd.message.from_.id,
+                                                           chat_id=upd.message.chat.id,
+                                                           chat_type=upd.message.chat.type)
         await self.tg_client.send_keyboard(upd.message.chat.id,
                                            text=f'Будешь играть?',
                                            keyboard=keyboard)
+
+    async def add_to_team(self, upd: UpdateObj) -> None:
+        game = await self.app.store.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
+        if game:
+            await self.app.store.words_game.add_user_to_team(game_id=game.id,
+                                                             user_id=upd.message.from_.id,)
+            await self.tg_client.send_message(chat_id=upd.message.chat.id,
+                                              text=f'{upd.message.from_.username} теперь ты в игре')
+
+            await asyncio.sleep(delay=5)
+
+            await self.pick_leader(game = game)
+
+    async def pick_leader(self, game: GameSession, player: int = None):
+        team = await self.app.store.words_game.get_team_by_game_id(game_session_id=game.id)
+        player = await self.app.store.words_game.select_user_by_id(choice(team) if not player else player)
+        if game.next_start_letter:
+            await self.tg_client.send_message(chat_id=game.chat_id,
+                                              text=f'{player.username} назови слово на букву {game.next_start_letter}',
+                                              force_reply=True)
+        else:
+            await self.tg_client.send_message(chat_id=game.chat_id,
+                                              text=f'{player.username} назови слово',
+                                              force_reply=True)
+
+    async def check_word(self, upd: UpdateObj) -> None:
+        word = upd.message.text
+        game = await self.app.store.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
+        if await self.app.store.yandex_dict.check_word_(text=word):
+            await self.tg_client.send_message(chat_id=upd.message.chat.id,
+                                              text=f'{upd.message.from_.username} {word} - правильно')
+            await self.app.store.words_game.update_gamesession(game_id=game.id,
+                                                               next_letter=word[-1])
+            game.next_start_letter = word[-1]
+            await self.pick_leader(game=game)
+        else:
+            await self.tg_client.send_message(chat_id=upd.message.chat.id,
+                                              text=f'{upd.message.from_.username} {word} - нет такого слова')
+            await self.pick_leader(game=game,
+                                   player=upd.message.from_.id)
+    async def bot_looser(self, game_session_id: int) -> None:
+        game = await self.app.store.words_game.update_gamesession(game_id=game_session_id,
+                                                                  status=False)
+        await self.tg_client.send_message(
+            chat_id=game.chat_id,
+            text=f'Удивительно, я проиграл, опять слово на Ы')
