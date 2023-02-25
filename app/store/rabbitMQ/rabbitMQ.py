@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class RabbitMQ:
     def __init__(self, app: 'Application' = None, host: str|None = None):
-        self.url = f"amqp://user:pass@{app.config.rabbitmq.host}:{app.config.rabbitmq.port}/" if app else f"amqp://user:pass@{host}/"
+        self.url = f"amqp://{app.config.rabbitmq.user}:{app.config.rabbitmq.password}@{app.config.rabbitmq.host}:{app.config.rabbitmq.port}/" if app else f"amqp://user:pass@{host}/"
         self.exchange: ExchangeType | None = None
         self.connection_: Connection | None = None
         self.listener: asyncio.Task | None = None
