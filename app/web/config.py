@@ -40,6 +40,8 @@ class DatabaseConfig:
 
 @dataclass
 class RabbitMQ:
+    user: str
+    password: str
     host: str
     port: int
 
@@ -80,7 +82,10 @@ def setup_config(app: "Application", config_path: str):
         database=DatabaseConfig(**raw_config["database"]),
         rabbitmq=RabbitMQ(
             host=raw_config["rabbitmq"]["host"],
-            port=raw_config["rabbitmq"]["port"],),
+            port=raw_config["rabbitmq"]["port"],
+            user=raw_config["rabbitmq"]["user"],
+            password=raw_config["rabbitmq"]["password"],
+        ),
         yandex_dict=YandexDictConfig(
             token=config_env['YANDEX_DICT_TOKEN'],
         ),

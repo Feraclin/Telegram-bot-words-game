@@ -37,11 +37,17 @@ class WGAccessor(BaseAccessor):
     async def update_gamesession(self,
                                  game_id: int,
                                  status: bool = True,
-                                 next_letter: str | None = None) -> GameSession | None:
-
-        query = update(GameSession).where(GameSession.id == game_id).values(status=status,
-                                                                            next_start_letter=next_letter)\
-            .returning(GameSession)
+                                 next_letter: str | None = None,
+                                 words: str | None = None) -> GameSession | None:
+        if words:
+            query = update(GameSession).where(GameSession.id == game_id).values(status=status,
+                                                                                next_start_letter=next_letter,
+                                                                                words=words)\
+                .returning(GameSession)
+        else:
+            query = update(GameSession).where(GameSession.id == game_id).values(status=status,
+                                                                                next_start_letter=next_letter) \
+                .returning(GameSession)
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
@@ -110,7 +116,7 @@ class WGAccessor(BaseAccessor):
         return
 
     async def add_user_to_team(self, user_id: int, game_id: int) -> None:
-        query = psg_insert(Team).values(user_id=user_id, game_id=game_id)
+        query = psg_insert(Team).values(player_id=user_id, game_sessions_id=game_id)
         query = query.on_conflict_do_nothing()
         res = await self.app.database.execute_query(query)
         return

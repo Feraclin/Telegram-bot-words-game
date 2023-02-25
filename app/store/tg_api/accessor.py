@@ -32,6 +32,7 @@ class TgClient:
         res_dict = await self.get_updates(offset=offset, timeout=timeout)
         try:
             if res_dict.get('result') is not None:
+                # print(res_dict)
                 return GetUpdatesResponse.Schema().load(res_dict)
         except* ValueError as e:
             print(f"Failed to load schema {e}")

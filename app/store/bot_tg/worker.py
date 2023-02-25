@@ -45,8 +45,6 @@ class Worker:
                             await self.chose_your_team(upd)
                     case '/yes' if upd.message.chat.type == 'private':
                         await self.start_game(upd)
-                    case '/yes':
-                        pass
                     case '/stop':
                         await self.stop_game(upd=upd)
                     case '/ping':
@@ -67,6 +65,15 @@ class Worker:
                                                       city_name=upd.message.text)
             except IntegrityError as e:
                 self.app.logger.info(f'start {e}')
+        elif upd.callback_query:
+            try:
+                match upd.callback_query.data:
+                    case '/yes':
+                        await self.add_to_team(upd)
+                    case _:
+                        pass
+            except IntegrityError as e:
+                self.app.logger.info(f'callback {e}')
 
     async def _worker_rabbit(self):
         try:
@@ -205,16 +212,16 @@ class Worker:
                                            keyboard=keyboard)
 
     async def add_to_team(self, upd: UpdateObj) -> None:
-        game = await self.app.store.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
+        game = await self.app.store.words_game.select_active_session_by_id(chat_id=upd.callback_query.message.chat.id)
         if game:
             await self.app.store.words_game.add_user_to_team(game_id=game.id,
-                                                             user_id=upd.message.from_.id,)
-            await self.tg_client.send_message(chat_id=upd.message.chat.id,
-                                              text=f'{upd.message.from_.username} теперь ты в игре')
+                                                             user_id=upd.callback_query.from_.id,)
+            await self.tg_client.send_message(chat_id=upd.callback_query.message.chat.id,
+                                              text=f'{upd.callback_query.from_.username} теперь ты в игре')
 
             await asyncio.sleep(delay=5)
 
-            await self.pick_leader(game = game)
+            await self.pick_leader(game=game)
 
     async def pick_leader(self, game: GameSession, player: int = None):
         team = await self.app.store.words_game.get_team_by_game_id(game_session_id=game.id)
@@ -232,17 +239,25 @@ class Worker:
         word = upd.message.text
         game = await self.app.store.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
         if await self.app.store.yandex_dict.check_word_(text=word):
-            await self.tg_client.send_message(chat_id=upd.message.chat.id,
-                                              text=f'{upd.message.from_.username} {word} - правильно')
-            await self.app.store.words_game.update_gamesession(game_id=game.id,
-                                                               next_letter=word[-1])
-            game.next_start_letter = word[-1]
-            await self.pick_leader(game=game)
+            if game.next_start_letter and game.next_start_letter.lower() != word.strip('/')[0].lower():
+                await self.tg_client.send_message(chat_id=upd.message.chat.id,
+                                                  text=f'{upd.message.from_.username} Надо слово на букву {game.next_start_letter}',)
+            else:
+                await self.tg_client.send_message(chat_id=upd.message.chat.id,
+                                                  text=f'{upd.message.from_.username} {word} - правильно')
+                last_letter = word[-1] if word[-1] not in 'ьыъйё' else word[-2]
+                await self.app.store.words_game.update_gamesession(game_id=game.id,
+                                                                   next_letter=last_letter,
+                                                                   words=game.words if game.words else '' + ' ' + word)
+                game.next_start_letter = last_letter
+                await self.pick_leader(game=game)
+                return
         else:
             await self.tg_client.send_message(chat_id=upd.message.chat.id,
                                               text=f'{upd.message.from_.username} {word} - нет такого слова')
-            await self.pick_leader(game=game,
-                                   player=upd.message.from_.id)
+        await self.pick_leader(game=game,
+                               player=upd.message.from_.id)
+
     async def bot_looser(self, game_session_id: int) -> None:
         game = await self.app.store.words_game.update_gamesession(game_id=game_session_id,
                                                                   status=False)

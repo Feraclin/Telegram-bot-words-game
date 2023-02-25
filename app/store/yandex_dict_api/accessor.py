@@ -23,6 +23,7 @@ class YandexDictAccessor(BaseAccessor):
                     print(word)
                     return True
                 else:
+                    print(await resp.json())
                     return False
 
 
