@@ -21,7 +21,7 @@ class YandexDictAccessor(BaseAccessor):
                 if resp.status == 200 and (word:=(await resp.json()).get('def', None)):
                     word = Word.Schema().load(word[0])
                     print(word)
-                    return True
+                    return True if word.pos == 'noun' else False
                 else:
                     print(await resp.json())
                     return False
@@ -41,4 +41,4 @@ async def check_word(text: str, lang: str = 'ru-ru') -> bool:
 
 
 if __name__ == '__main__':
-    asyncio.run(check_word(text='привет'))
+    asyncio.run(check_word(text='Ароматный'))

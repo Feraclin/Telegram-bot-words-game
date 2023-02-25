@@ -246,10 +246,12 @@ class Worker:
                 await self.tg_client.send_message(chat_id=upd.message.chat.id,
                                                   text=f'{upd.message.from_.username} {word} - правильно')
                 last_letter = word[-1] if word[-1] not in 'ьыъйё' else word[-2]
+                words = (game.words if game.words else '') + ' ' + word.strip('/')
                 await self.app.store.words_game.update_gamesession(game_id=game.id,
                                                                    next_letter=last_letter,
-                                                                   words=game.words if game.words else '' + ' ' + word)
+                                                                   words=words)
                 game.next_start_letter = last_letter
+                game.words = words
                 await self.pick_leader(game=game)
                 return
         else:
