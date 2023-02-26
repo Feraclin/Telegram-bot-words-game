@@ -23,7 +23,6 @@ class QuestionSchema(Schema):
         return data
 
 
-
 class AnswerSchema(Schema):
     title = fields.Str(required=True)
     is_correct = fields.Bool(required=True)

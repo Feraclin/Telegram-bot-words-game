@@ -22,10 +22,10 @@ class WGAccessor(BaseAccessor):
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
-    async def create_gamesession(self,
-                                 user_id: int,
-                                 chat_id: int,
-                                 chat_type: str) -> GameSession:
+    async def create_game_session(self,
+                                  user_id: int,
+                                  chat_id: int,
+                                  chat_type: str) -> GameSession:
 
         query = insert(GameSession).values(user_id=user_id,
                                            chat_id=chat_id,
@@ -34,11 +34,11 @@ class WGAccessor(BaseAccessor):
         res = await self.app.database.execute_query(query)
         return res.scalar()
 
-    async def update_gamesession(self,
-                                 game_id: int,
-                                 status: bool = True,
-                                 next_letter: str | None = None,
-                                 words: str | None = None) -> GameSession | None:
+    async def update_game_session(self,
+                                  game_id: int,
+                                  status: bool = True,
+                                  next_letter: str | None = None,
+                                  words: str | None = None) -> GameSession | None:
         if words:
             query = update(GameSession).where(GameSession.id == game_id).values(status=status,
                                                                                 next_start_letter=next_letter,
@@ -51,15 +51,15 @@ class WGAccessor(BaseAccessor):
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
-    async def delete_gamesession(self, chat_id: int) -> None:
+    async def delete_game_session(self, chat_id: int) -> None:
         query = delete(GameSession).where(GameSession.chat_id == chat_id)
 
         res = await self.app.database.execute_query(query)
         return res.scalar()
 
-    async def add_user_to_gamesession(self,
-                                      game_id: int,
-                                      user_id: int) -> GameSession | None:
+    async def add_user_to_game_session(self,
+                                       game_id: int,
+                                       user_id: int) -> GameSession | None:
         query = update(GameSession).where(GameSession.id == game_id).values(next_user_id=user_id).returning(GameSession)
 
         res = await self.app.database.execute_query(query)
@@ -120,13 +120,13 @@ class WGAccessor(BaseAccessor):
     async def set_city_to_used(self, city_id: int, game_session_id: int) -> None:
 
         queue = insert(UsedCity).values(city_id=city_id, game_session_id=game_session_id)
-        res = await self.app.database.execute_query(queue)
+        await self.app.database.execute_query(queue)
         return
 
     async def add_user_to_team(self, user_id: int, game_id: int) -> None:
         query = psg_insert(Team).values(player_id=user_id, game_sessions_id=game_id)
         query = query.on_conflict_do_nothing()
-        res = await self.app.database.execute_query(query)
+        await self.app.database.execute_query(query)
         return
 
     async def get_team_by_game_id(self, game_session_id: int) -> list[int]:
@@ -140,4 +140,4 @@ class WGAccessor(BaseAccessor):
                                       player_id: int) -> None:
         query = update(Team).where(Team.game_sessions_id == game_id,
                                    Team.player_id == player_id).values(life=Team.life - 1)
-        res = await self.app.database.execute_query(query)
+        await self.app.database.execute_query(query)

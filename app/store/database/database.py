@@ -1,6 +1,4 @@
 from typing import TYPE_CHECKING
-from asyncio import current_task
-from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_scoped_session, create_async_engine, \

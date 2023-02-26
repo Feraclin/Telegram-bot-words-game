@@ -42,7 +42,7 @@ class TgClient:
         payload = {
             'chat_id': chat_id,
             'text': text,
-            'reply_markup': {"force_reply": True,
+            'reply_markup': {"force_reply": force_reply,
                              "selective": True}
         }
         async with aiohttp.ClientSession() as session:
@@ -68,12 +68,12 @@ class TgClient:
 
     async def send_keyboard_to_player(self,
                                       chat_id: int,
-                                      mentinion: str,
+                                      text: str,
                                       keyboard: dict):
         url = self.get_url("sendMessage")
         payload = {
             'chat_id': chat_id,
-            'text': mentinion,
+            'text': text,
             'reply_markup': keyboard,
             'parse_mode': "Markdown",
         }
