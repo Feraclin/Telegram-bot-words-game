@@ -57,6 +57,14 @@ class WGAccessor(BaseAccessor):
         res = await self.app.database.execute_query(query)
         return res.scalar()
 
+    async def add_user_to_gamesession(self,
+                                      game_id: int,
+                                      user_id: int) -> GameSession | None:
+        query = update(GameSession).where(GameSession.id == game_id).values(next_user_id=user_id).returning(GameSession)
+
+        res = await self.app.database.execute_query(query)
+        return res.scalar_one_or_none()
+
     async def create_user(self,
                           user_id: int,
                           username: str) -> None:
@@ -122,7 +130,14 @@ class WGAccessor(BaseAccessor):
         return
 
     async def get_team_by_game_id(self, game_session_id: int) -> list[int]:
-        query = select(Team.player_id).where(Team.game_sessions_id == game_session_id)
+        query = select(Team.player_id).where(Team.game_sessions_id == game_session_id, Team.life > 0)
         res = await self.app.database.execute_query(query)
         team_lst = res.scalars().all()
         return team_lst
+
+    async def remove_life_from_player(self,
+                                      game_id: int,
+                                      player_id: int) -> None:
+        query = update(Team).where(Team.game_sessions_id == game_id,
+                                   Team.player_id == player_id).values(life=Team.life - 1)
+        res = await self.app.database.execute_query(query)

@@ -32,12 +32,34 @@ class Chat:
 
 
 @dataclass
+class PollAnswer:
+    text: str
+    voter_count: int
+
+
+@dataclass
+class Poll:
+    question: str
+    options: list[PollAnswer]
+    total_voter_count: int
+    is_closed: bool
+    is_anonymous: bool
+    type: str
+    allow_multiple_answers: bool | None
+    correct_option_id: int | None
+
+    class Meta:
+        unknown = EXCLUDE
+
+
+@dataclass
 class Message:
     message_id: int
     from_: MessageFrom = field(metadata={"data_key": "from"})
     chat: Chat
     date: int
     text: str | None = 'Картинки не смотрю'
+    poll: Poll | None = None
 
     class Meta:
         unknown = EXCLUDE
@@ -89,6 +111,17 @@ class GetUpdatesResponse:
 class SendMessageResponse:
     ok: bool
     result: Message
+
+    Schema: ClassVar[Type[Schema]] = Schema
+
+    class Meta:
+        unknown = EXCLUDE
+
+
+@dataclass
+class PollResultSchema:
+    ok: bool
+    result: Poll
 
     Schema: ClassVar[Type[Schema]] = Schema
 

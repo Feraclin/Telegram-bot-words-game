@@ -1,7 +1,7 @@
 from typing import Optional
 import aiohttp
 
-from app.store.tg_api.schemes import GetUpdatesResponse, SendMessageResponse
+from app.store.tg_api.schemes import GetUpdatesResponse, SendMessageResponse, PollResultSchema
 
 
 class TgClient:
@@ -42,7 +42,8 @@ class TgClient:
         payload = {
             'chat_id': chat_id,
             'text': text,
-            'force_reply': force_reply
+            'reply_markup': {"force_reply": True,
+                             "selective": True}
         }
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
@@ -52,7 +53,7 @@ class TgClient:
     async def send_keyboard(self,
                             chat_id: int,
                             text: str = 'Pick on me',
-                            keyboard: dict = None) -> None:
+                            keyboard: dict = None) -> SendMessageResponse:
         url = self.get_url("sendMessage")
         payload = {
             'chat_id': chat_id,
@@ -62,6 +63,7 @@ class TgClient:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
+                print(res_dict)
                 return SendMessageResponse.Schema().load(res_dict)
 
     async def send_keyboard_to_player(self,
@@ -75,8 +77,56 @@ class TgClient:
             'reply_markup': keyboard,
             'parse_mode': "Markdown",
         }
-        print(payload)
+
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
                 return SendMessageResponse.Schema().load(res_dict)
+
+    async def send_poll(self,
+                        chat_id: int,
+                        question: str,
+                        answers: list[str],
+                        anonymous: bool = False
+                        ) -> SendMessageResponse:
+        url = self.get_url("sendPoll")
+        payload = {
+            'chat_id': chat_id,
+            'question': question,
+            'options': answers,
+            'is_anonymous': anonymous,
+            "open_period": 15,
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as resp:
+                res_dict = await resp.json()
+                return SendMessageResponse.Schema().load(res_dict)
+
+    async def remove_inline_keyboard(self,
+                                     message_id: int,
+                                     chat_id: int):
+        url = self.get_url("editMessageReplyMarkup")
+        payload = {
+            "chat_id": chat_id,
+            'message_id': message_id,
+            'reply_markup': None
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as resp:
+                res_dict = await resp.json()
+                return SendMessageResponse.Schema().load(res_dict)
+
+    async def stop_poll(self,
+                        chat_id: int,
+                        message_id: int) -> PollResultSchema:
+        url = self.get_url("stopPoll")
+        payload = {
+            'chat_id': chat_id,
+            "message_id": message_id
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as resp:
+                res_dict = await resp.json()
+                print(res_dict)
+                return PollResultSchema.Schema().load(res_dict)
