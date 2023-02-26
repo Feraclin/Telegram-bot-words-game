@@ -236,17 +236,20 @@ class Worker:
                                               force_reply=True)
 
     async def check_word(self, upd: UpdateObj) -> None:
-        word = upd.message.text
+        word = upd.message.text.strip('/')
         game = await self.app.store.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
         if await self.app.store.yandex_dict.check_word_(text=word):
-            if game.next_start_letter and game.next_start_letter.lower() != word.strip('/')[0].lower():
+            if game.next_start_letter and game.next_start_letter.lower() != word[0].lower():
                 await self.tg_client.send_message(chat_id=upd.message.chat.id,
                                                   text=f'{upd.message.from_.username} Надо слово на букву {game.next_start_letter}',)
+            elif word in game.words.replace('/', '').split():
+                await self.tg_client.send_message(chat_id=upd.message.chat.id,
+                                                  text=f'Слово {word} уже было' )
             else:
                 await self.tg_client.send_message(chat_id=upd.message.chat.id,
                                                   text=f'{upd.message.from_.username} {word} - правильно')
                 last_letter = word[-1] if word[-1] not in 'ьыъйё' else word[-2]
-                words = (game.words if game.words else '') + ' ' + word.strip('/')
+                words = (game.words if game.words else '') + ' ' + word
                 await self.app.store.words_game.update_gamesession(game_id=game.id,
                                                                    next_letter=last_letter,
                                                                    words=words)
