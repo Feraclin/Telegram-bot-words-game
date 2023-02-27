@@ -13,7 +13,7 @@ class AdminLoginView(View):
     @request_schema(AdminSchema)
     @response_schema(AdminSchema, 200)
     async def post(self):
-        print(self.data)
+
         email, password = self.data["email"], self.data["password"]
         # проверка наличия администратора с данным email и валидность пароля
         self.request.app.logger.info(f'{email}, {password}')

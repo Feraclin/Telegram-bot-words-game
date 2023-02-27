@@ -34,7 +34,8 @@ class ThemeModel(DB):
     title: Mapped[str] = mapped_column(nullable=False, unique=True)
     questions_children: Mapped[list['QuestionModel']] = relationship(back_populates='theme_parent',
                                                                      cascade="all, delete-orphan",
-                                                                     lazy='subquery')
+                                                                     lazy='subquery'
+                                                                     )
 
     def to_dc(self) -> Theme:
         return Theme(id=self.id,
@@ -50,7 +51,8 @@ class QuestionModel(DB):
     theme_parent: Mapped[ThemeModel] = relationship(back_populates="questions_children")
     answers: Mapped[list['AnswerModel']] = relationship(back_populates='question_parent',
                                                         cascade='all, delete',
-                                                        lazy='subquery')
+                                                        lazy='subquery'
+                                                        )
 
     def to_dc(self) -> Question:
         answers_list = [i.to_dc() for i in self.answers]
@@ -69,7 +71,8 @@ class AnswerModel(DB):
     question_id: Mapped[int] = mapped_column(ForeignKey('questions.id', ondelete='CASCADE'), nullable=False)
     question_parent: Mapped[QuestionModel] = relationship(back_populates='answers',
                                                           cascade='all, delete',
-                                                          lazy='subquery')
+                                                          lazy='subquery'
+                                                          )
 
     def to_dc(self) -> Answer:
         return Answer(title=self.title,

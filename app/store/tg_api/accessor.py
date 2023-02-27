@@ -63,7 +63,7 @@ class TgClient:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
-                print(res_dict)
+
                 return SendMessageResponse.Schema().load(res_dict)
 
     async def send_keyboard_to_player(self,
@@ -110,8 +110,7 @@ class TgClient:
         payload = {
             "chat_id": chat_id,
             'message_id': message_id,
-            'reply_markup': None
-        }
+            'reply_markup': {'inline_keyboard': [[]]}}
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
@@ -128,5 +127,5 @@ class TgClient:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
-                print(res_dict)
+
                 return PollResultSchema.Schema().load(res_dict)

@@ -49,7 +49,7 @@ class QuizAccessor(BaseAccessor):
     async def get_question_by_title(self, title: str) -> QuestionModel | None:
         res = await self.app.database.execute_query(select(QuestionModel).where(QuestionModel.title == title))
         question = res.scalar().to_dc()
-        print(question)
+
         return question
 
     async def list_questions(self, theme_id: int | None = None) -> list[Question]:

@@ -96,8 +96,8 @@ class WGAccessor(BaseAccessor):
         res = await self.app.database.execute_query(query)
         city = res.scalar_one_or_none()
         if not city:
-            return await self.app.store.tg_bot.worker.bot_looser(game_session_id=game_session_id)
-        if await self.check_city_in_used(city.id, game_session_id):
+            return city
+        elif await self.check_city_in_used(city.id, game_session_id):
             return await self.get_city_by_first_letter(game_session_id=game_session_id,
                                                        letter=letter,
                                                        city_count=city_count)
@@ -107,14 +107,14 @@ class WGAccessor(BaseAccessor):
     async def get_city_by_name(self, name: str) -> str | None:
         queue = select(City).where(City.name == name)
         res = await self.app.database.execute_query(queue)
-        print(a := res.scalar())
+        a = res.scalar()
         return a
 
     async def check_city_in_used(self, city_id: int, game_session_id: int) -> bool:
         queue = select(UsedCity).where(UsedCity.city_id == city_id, UsedCity.game_session_id == game_session_id)
         res = await self.app.database.execute_query(queue)
         double_city = res.scalar_one_or_none()
-        print(double_city, "проверка")
+
         return True if double_city else False
 
     async def set_city_to_used(self, city_id: int, game_session_id: int) -> None:

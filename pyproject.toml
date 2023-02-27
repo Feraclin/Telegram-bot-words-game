@@ -30,6 +30,7 @@ aiohttp-devtools = "^1.0.post0"
 marshmallow-dataclass = "^8.5.11"
 bson = "^0.5.10"
 aio-pika = "^8.3.0"
+translate = "^3.6.1"
 
 [build-system]
 requires = ["poetry-core"]

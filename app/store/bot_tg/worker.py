@@ -63,13 +63,12 @@ class Worker:
                             answers=['yes', 'no', 'maybe'],
                             anonymous=True
                         )
-                        print(poll)
+
                         await asyncio.sleep(12)
-                        stop_poll = await self.tg_client.stop_poll(
+                        await self.tg_client.stop_poll(
                             chat_id=poll.result.chat.id,
                             message_id=poll.result.message_id
                         )
-                        print(stop_poll)
 
                     case '/reply':
                         await self.tg_client.send_message(
@@ -88,7 +87,7 @@ class Worker:
                         inline_message = await self.tg_client.send_keyboard(upd.message.chat.id,
                                                                             text=f'Будешь играть?',
                                                                             keyboard=keyboard)
-                        print(inline_message)
+
                         await asyncio.sleep(5)
 
                         await self.tg_client.remove_inline_keyboard(chat_id=inline_message.result.chat.id,
@@ -99,12 +98,11 @@ class Worker:
                               select_active_session_by_id(chat_id=upd.message.chat.id):
                         await self.check_word(upd=upd)
 
-                    case _:
-                        if await self.app.store.words_game.select_active_session_by_id(user_id=upd.message.from_.id):
-                            await self.check_city(user_id=upd.message.from_.id,
-                                                  chat_id=upd.message.chat.id,
-                                                  username=upd.message.from_.username,
-                                                  city_name=upd.message.text)
+                    case _ if await self.app.store.words_game.select_active_session_by_id(user_id=upd.message.from_.id):
+                        await self.check_city(user_id=upd.message.from_.id,
+                                              chat_id=upd.message.chat.id,
+                                              username=upd.message.from_.username,
+                                              city_name=upd.message.text)
             except IntegrityError as e:
                 self.app.logger.info(f'start {e}')
         elif upd.callback_query:
@@ -149,7 +147,7 @@ class Worker:
 
     async def stop(self):
         for t in self._tasks:
-            print(t)
+
             t.cancel()
 
     async def start_game(self, upd: UpdateObj) -> None:
@@ -189,7 +187,8 @@ class Worker:
 
         game = await self.app.store.words_game.select_active_session_by_id(user_id)
         city = await self.app.store.words_game.get_city_by_first_letter(letter=letter, game_session_id=game.id)
-
+        if not city:
+            return await self.app.store.tg_bot.worker.bot_looser(game_session_id=game.id)
         first_letter = (city.name[-1] if city.name[-1] not in 'ьыъйё' else city.name[-2]).capitalize()
 
         await self.app.store.words_game.update_game_session(game_id=game.id,
@@ -252,7 +251,10 @@ class Worker:
         inline_message = await self.tg_client.send_keyboard(upd.message.chat.id,
                                                             text=f'Будешь играть?',
                                                             keyboard=keyboard)
-        print(inline_message)
+        await asyncio.sleep(5)
+
+        await self.tg_client.remove_inline_keyboard(chat_id=inline_message.result.chat.id,
+                                                    message_id=inline_message.result.message_id)
 
     async def add_to_team(self, upd: UpdateObj) -> None:
         game = await self.app.store.words_game.select_active_session_by_id(chat_id=upd.callback_query.message.chat.id)
@@ -268,7 +270,7 @@ class Worker:
 
     async def pick_leader(self, game: GameSession, player: int = None):
         team = await self.app.store.words_game.get_team_by_game_id(game_session_id=game.id)
-        print(team)
+
         if not team:
             await self.app.store.words_game.update_game_session(game_id=game.id,
                                                                 status=False)

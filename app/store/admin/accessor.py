@@ -22,7 +22,7 @@ class AdminAccessor(BaseAccessor):
 
     async def create_admin(self, email: str, password: str) -> Admin:
         res = await self.get_by_email(email=email)
-        print(res)
+
         if res:
             return res
 
