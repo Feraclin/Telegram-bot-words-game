@@ -4,7 +4,6 @@ import asyncio
 from random import choice
 from typing import TYPE_CHECKING
 
-import aio_pika
 import bson
 from sqlalchemy.exc import IntegrityError
 
@@ -116,26 +115,7 @@ class Worker:
                 self.app.logger.info(f'callback {e}')
 
     async def _worker_rabbit(self):
-        try:
-            channel = await self.app.rabbitMQ.connection_.channel()
-            await channel.set_qos(prefetch_count=100)
-
-            auth_exchange = await channel.declare_exchange(name="auth",
-                                                           type=aio_pika.ExchangeType.TOPIC,
-                                                           durable=True)
-
-            queue = await channel.declare_queue(name=f"tg_bot",
-                                                durable=True, )
-            await queue.bind(auth_exchange, routing_key="tg_bot")
-
-            await queue.consume(self.on_message, no_ack=True)
-
-            print(" [*]worker.rabbit Waiting for messages")
-            await asyncio.Future()
-        except asyncio.CancelledError as e:
-            self.app.logger.info(f'rabbit_worker asyncio {e}')
-        except Exception as e:
-            self.app.logger.info(f'rabbit_worker {e}')
+        await self.app.rabbitMQ.listen_events(on_message_func=self.on_message)
 
     async def on_message(self, message):
         upd = UpdateObj.Schema().load(bson.loads(message.body))
