@@ -19,7 +19,7 @@ class TgBotAccessor(BaseAccessor):
                              app=self.app)
         self.app = app
         # self.is_game = True
-        # self.cgk = CGK(token, app=self.app)
+        # self.game = Words_Game(app=self.app)
 
     async def connect(self, app: "Application"):
         await self.poller.start()
