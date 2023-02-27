@@ -1,9 +1,8 @@
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
-from typing_extensions import Annotated
 
-from app.store.database.sqlalchemy_base import DB, bigint
+from app.store.database.sqlalchemy_base import DB, bigint, list_str
 
 
 class User(MappedAsDataclass, DB):
@@ -19,7 +18,7 @@ class GameSession(MappedAsDataclass, DB):
     id: Mapped[int] = mapped_column(primary_key=True)
     game_type: Mapped[str] = mapped_column(nullable=False)
     chat_id: Mapped[bigint] = mapped_column(nullable=False)
-    words: Mapped[str] = mapped_column(nullable=True)
+    words: Mapped[list_str] = mapped_column(nullable=True)
     next_user_id: Mapped[bigint] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
     next_user: Mapped[User] = relationship(User, lazy='joined', foreign_keys=[next_user_id])
     user_id: Mapped[bigint] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=True)

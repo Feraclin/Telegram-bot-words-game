@@ -306,7 +306,7 @@ class Worker:
             await self.tg_client.send_message(chat_id=upd.message.chat.id,
                                               text=f'{upd.message.from_.username} '
                                                    f'Надо слово на букву {game.next_start_letter}', )
-        elif game.words and word in game.words.replace('/', '').split():
+        elif game.words and word in game.words:
             await self.tg_client.send_message(chat_id=upd.message.chat.id,
                                               text=f'Слово {word} уже было')
         else:
@@ -330,12 +330,14 @@ class Worker:
         await self.tg_client.send_message(chat_id=upd.message.chat.id,
                                           text=f'{upd.message.from_.username} {word} - правильно')
         last_letter = word[-1] if word[-1] not in 'ьыъйё' else word[-2]
-        words = (game.words if game.words else '') + ' ' + word
+        if game.words:
+            game.words.append(word)
+        else:
+            game.words = [word, ]
         await self.app.store.words_game.update_game_session(game_id=game.id,
                                                             next_letter=last_letter,
-                                                            words=words)
+                                                            words=game.words)
         game.next_start_letter = last_letter
-        game.words = words
         await self.pick_leader(game=game)
 
     async def bot_looser(self, game_session_id: int) -> None:
