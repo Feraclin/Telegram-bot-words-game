@@ -32,7 +32,7 @@ class TgClient:
         res_dict = await self.get_updates(offset=offset, timeout=timeout)
         try:
             if res_dict.get('result') is not None:
-                # print(res_dict)
+                print(res_dict)
                 return GetUpdatesResponse.Schema().load(res_dict)
         except* ValueError as e:
             print(f"Failed to load schema {e}")
@@ -87,7 +87,8 @@ class TgClient:
                         chat_id: int,
                         question: str,
                         answers: list[str],
-                        anonymous: bool = False
+                        anonymous: bool = False,
+                        period: int = 15
                         ) -> SendMessageResponse:
         url = self.get_url("sendPoll")
         payload = {
@@ -95,8 +96,8 @@ class TgClient:
             'question': question,
             'options': answers,
             'is_anonymous': anonymous,
-            "open_period": 15,
-        }
+            "open_period": period,
+            'reply_markup': {'inline_keyboard': [[{"text": "About word", 'callback_data': '/pass'}]]}}
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
@@ -114,6 +115,7 @@ class TgClient:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
+                print(res_dict)
                 return SendMessageResponse.Schema().load(res_dict)
 
     async def stop_poll(self,
@@ -127,7 +129,7 @@ class TgClient:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
-
+                print(res_dict)
                 return PollResultSchema.Schema().load(res_dict)
 
     async def send_callback_alert(self, callback_id: str, text: str) -> int:
@@ -140,3 +142,18 @@ class TgClient:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
                 return resp.status
+
+    async def edit_message_text(self,
+                                chat_id: int,
+                                message_id: int):
+        url = self.get_url("editMessageText")
+        payload = {
+            'chat_id': chat_id,
+            "message_id": message_id,
+            "text": "Мы учтем ваше мнение(нет)"
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as resp:
+                res_dict = await resp.json()
+                print(res_dict)
+                return SendMessageResponse.Schema().load(res_dict)

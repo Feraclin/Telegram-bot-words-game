@@ -24,7 +24,7 @@ class Worker:
         self._tasks: list[asyncio.Task] = []
 
     async def handle_update(self, upd: UpdateObj):
-        self.app.logger.info(upd)
+        # self.app.logger.info(upd)
         if upd.message:
             try:
                 match upd.message.text:
@@ -59,8 +59,17 @@ class Worker:
                             chat_id=upd.message.chat.id,
                             question="Вот что я умею?",
                             answers=['yes', 'no', 'maybe'],
-                            anonymous=True
+                            anonymous=True,
+                            period=5,
+
+
                         )
+
+                        await asyncio.sleep(10)
+
+                        stop_poll = await self.tg_client.remove_inline_keyboard(chat_id=upd.message.chat.id,
+                                                                                message_id=poll.result.message_id)
+                        print(stop_poll)
 
                     case '/reply':
                         await self.tg_client.send_message(
@@ -106,7 +115,7 @@ class Worker:
                         pass
             except IntegrityError as e:
                 self.app.logger.info(f'callback {e}')
-        elif upd.poll:
+        elif upd.poll and upd.poll.is_closed == True:
             try:
                 await self.check_poll(upd)
             except IntegrityError as e:
@@ -117,7 +126,7 @@ class Worker:
 
     async def on_message(self, message):
         upd = UpdateObj.Schema().load(bson.loads(message.body))
-        print("worker.rabbit is: %r" % upd)
+        # print("worker.rabbit is: %r" % upd)
         await self.handle_update(upd)
 
     async def start(self):
@@ -339,6 +348,8 @@ class Worker:
 
     async def check_poll(self, upd: UpdateObj) -> None:
         game = await self.app.store.words_game.get_game_session_by_poll_id(poll_id=upd.poll.id)
+        if not game:
+            return
         word = upd.poll.question.split()[4]
         answers = upd.poll.options
         yes = 0

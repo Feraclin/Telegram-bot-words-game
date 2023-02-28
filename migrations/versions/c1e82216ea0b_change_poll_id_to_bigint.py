@@ -21,7 +21,9 @@ def upgrade() -> None:
     op.alter_column('game_sessions', 'current_poll_id',
                existing_type=sa.VARCHAR(),
                type_=sa.BigInteger(),
-               existing_nullable=True)
+               existing_nullable=True,
+               postgresql_using="current_poll_id::bigint"
+                    )
     # ### end Alembic commands ###
 
 
@@ -30,5 +32,6 @@ def downgrade() -> None:
     op.alter_column('game_sessions', 'current_poll_id',
                existing_type=sa.BigInteger(),
                type_=sa.VARCHAR(),
-               existing_nullable=True)
+               existing_nullable=True,
+               postgresql_using="current_poll_id::bigint")
     # ### end Alembic commands ###

@@ -138,7 +138,7 @@ class SendMessageResponse:
 @dataclass
 class PollResultSchema:
     ok: bool
-    result: Poll
+    result: Message
 
     Schema: ClassVar[Type[Schema]] = Schema
 
