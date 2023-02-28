@@ -27,6 +27,7 @@ class GameSession(MappedAsDataclass, DB):
     winner: Mapped[User] = relationship(User, lazy='joined', foreign_keys=[winner_id])
     status: Mapped[bool] = mapped_column(nullable=False, default=False)
     next_start_letter: Mapped[str] = mapped_column(default=None, nullable=True)
+    current_poll_id: Mapped[bigint] = mapped_column(default=None, nullable=True)
 
 
 class Team(MappedAsDataclass, DB):

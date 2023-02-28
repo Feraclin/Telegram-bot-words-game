@@ -20,7 +20,7 @@ class WGAccessor(BaseAccessor):
         else:
             return None
         res = await self.app.database.execute_query(query)
-        return res.scalar_one_or_none()
+        return res.scalar()
 
     async def create_game_session(self,
                                   user_id: int,
@@ -38,16 +38,25 @@ class WGAccessor(BaseAccessor):
                                   game_id: int,
                                   status: bool = True,
                                   next_letter: str | None = None,
-                                  words: str | None = None) -> GameSession | None:
-        if words:
-            query = update(GameSession).where(GameSession.id == game_id).values(status=status,
-                                                                                next_start_letter=next_letter,
-                                                                                words=words)\
-                .returning(GameSession)
-        else:
-            query = update(GameSession).where(GameSession.id == game_id).values(status=status,
-                                                                                next_start_letter=next_letter) \
-                .returning(GameSession)
+                                  words: str | None = None,
+                                  poll_id: int | None = None,
+                                  next_user_id: int | None = None) -> GameSession | None:
+        # if words:
+        #         #     query = update(GameSession).where(GameSession.id == game_id).values(status=status,
+        #         #                                                                         next_start_letter=next_letter,
+        #         #                                                                         words=words)\
+        #         #         .returning(GameSession)
+        #         # else:
+        #         #     query = update(GameSession).where(GameSession.id == game_id).values(status=status,
+        #         #                                                                         next_start_letter=next_letter) \
+        #         #         .returning(GameSession)
+        query = update(GameSession).where(GameSession.id == game_id) \
+            .values(status=status,
+                    next_start_letter=next_letter if next_letter else GameSession.next_start_letter,
+                    words=words if words else GameSession.words,
+                    current_poll_id=poll_id if poll_id else GameSession.current_poll_id,
+                    next_user_id=next_user_id if next_user_id else GameSession.next_user_id
+                    ).returning(GameSession)
         res = await self.app.database.execute_query(query)
         return res.scalar_one_or_none()
 
@@ -141,3 +150,8 @@ class WGAccessor(BaseAccessor):
         query = update(Team).where(Team.game_sessions_id == game_id,
                                    Team.player_id == player_id).values(life=Team.life - 1)
         await self.app.database.execute_query(query)
+
+    async def get_game_session_by_poll_id(self, poll_id: int) -> GameSession | None:
+        query = select(GameSession).where(GameSession.current_poll_id == poll_id)
+        res = await self.app.database.execute_query(query)
+        return res.scalar_one_or_none()

@@ -24,8 +24,7 @@ class Worker:
         self._tasks: list[asyncio.Task] = []
 
     async def handle_update(self, upd: UpdateObj):
-        self.app.logger.info(
-            f"worker text: {upd.message.text}" if upd.message else f'worker text: {upd.callback_query.message.text}')
+        self.app.logger.info(upd)
         if upd.message:
             try:
                 match upd.message.text:
@@ -61,12 +60,6 @@ class Worker:
                             question="Вот что я умею?",
                             answers=['yes', 'no', 'maybe'],
                             anonymous=True
-                        )
-
-                        await asyncio.sleep(12)
-                        await self.tg_client.stop_poll(
-                            chat_id=poll.result.chat.id,
-                            message_id=poll.result.message_id
                         )
 
                     case '/reply':
@@ -113,6 +106,11 @@ class Worker:
                         pass
             except IntegrityError as e:
                 self.app.logger.info(f'callback {e}')
+        elif upd.poll:
+            try:
+                await self.check_poll(upd)
+            except IntegrityError as e:
+                self.app.logger.info(f'poll {e}')
 
     async def _worker_rabbit(self):
         await self.app.rabbitMQ.listen_events(on_message_func=self.on_message)
@@ -294,21 +292,24 @@ class Worker:
             check = await self.app.store.yandex_dict.check_word_(text=word)
 
             if not check:
-                check = await self.words_poll(upd=upd,
-                                              word=word)
+                await self.words_poll(word=word,
+                                      game=game,
+                                      upd=upd)
+                return
         if not check:
             await self.app.store.words_game.remove_life_from_player(game_id=game.id,
                                                                     player_id=upd.message.from_.id)
             await self.pick_leader(game=game,
                                    player=upd.message.from_.id)
         else:
-            await self.right_word(upd=upd,
-                                  game=game,
+            await self.right_word(game=game,
                                   word=word)
 
-    async def right_word(self, upd: UpdateObj, game: GameSession, word: str):
-        await self.tg_client.send_message(chat_id=upd.message.chat.id,
-                                          text=f'{upd.message.from_.username} {word} - правильно')
+    async def right_word(self,
+                         game: GameSession,
+                         word: str):
+        await self.tg_client.send_message(chat_id=game.chat_id,
+                                          text=f'{word} - правильно')
         last_letter = word[-1] if word[-1] not in 'ьыъйё' else word[-2]
         if game.words:
             game.words.append(word)
@@ -327,16 +328,19 @@ class Worker:
             chat_id=game.chat_id,
             text=f'Удивительно, я проиграл, опять слово на Ы')
 
-    async def words_poll(self, upd: UpdateObj, word: str) -> bool:
+    async def words_poll(self, upd: UpdateObj, word: str, game: GameSession) -> None:
         poll = await self.tg_client.send_poll(
             chat_id=upd.message.chat.id,
             question=f"Граждане примем ли мы {word} как допустимое слово?",
             answers=['Yes', "No", "Слово?"],
             anonymous=False)
-        await asyncio.sleep(delay=5)
-        poll_result = await self.tg_client.stop_poll(chat_id=poll.result.chat.id,
-                                                     message_id=poll.result.message_id)
-        answers = poll_result.result.options
+        await self.app.store.words_game.update_game_session(game_id=game.id,
+                                                            poll_id=poll.result.poll.id)
+
+    async def check_poll(self, upd: UpdateObj) -> None:
+        game = await self.app.store.words_game.get_game_session_by_poll_id(poll_id=upd.poll.id)
+        word = upd.poll.question.split()[4]
+        answers = upd.poll.options
         yes = 0
         no = 0
         for ans in answers:
@@ -346,8 +350,8 @@ class Worker:
                 case 'No':
                     no = ans.voter_count
         if yes > no:
-            return True
+            return await self.right_word(word=word,
+                                         game=game)
         else:
-            await self.tg_client.send_message(chat_id=upd.message.chat.id,
-                                              text=f'{upd.message.from_.username} {word} - нет такого слова')
-            return False
+            await self.tg_client.send_message(chat_id=game.chat_id,
+                                              text=f'{word} - нет такого слова')

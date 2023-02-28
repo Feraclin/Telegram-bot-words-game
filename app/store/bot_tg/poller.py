@@ -23,12 +23,7 @@ class Poller:
             print('poller')
             res = await self.tg_client.get_updates_in_objects(offset=offset, timeout=20)
             for u in res.result:
-
                 offset = u.update_id + 1
-
-                if u.message is None and u.callback_query is None:
-                    continue
-                print(f"worker text: {u.message.text}" if u.message else f'worker text:{u.callback_query}')
                 upd = UpdateObj.Schema().dump(u)
                 self.app.logger.info(u)
                 await self.app.rabbitMQ.send_event(message=upd)

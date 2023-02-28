@@ -33,8 +33,6 @@ class Chat:
 
 @dataclass
 class PollAnswer:
-    text: str | None = None
-    voter_count: int | None = None
     poll_id: int | None = None
     user: MessageFrom | None = None
     option_ids: list[int] | None = None
@@ -44,9 +42,19 @@ class PollAnswer:
 
 
 @dataclass
+class PollOption:
+    text: str | None = None
+    voter_count: int | None = None
+
+    class Meta:
+        unknown = EXCLUDE
+
+
+@dataclass
 class Poll:
+    id: int
     question: str
-    options: list[PollAnswer]
+    options: list[PollOption]
     total_voter_count: int
     is_closed: bool
     is_anonymous: bool
