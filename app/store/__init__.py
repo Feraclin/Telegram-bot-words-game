@@ -12,15 +12,13 @@ if typing.TYPE_CHECKING:
 
 class Store:
     def __init__(self, app: "Application"):
-        from app.store.bot_vk.manager import BotManager
+
         from app.store.admin.accessor import AdminAccessor
         from app.store.quiz.accessor import QuizAccessor
-        from app.store.vk_api.accessor import VkApiAccessor
+
 
         self.quizzes = QuizAccessor(app)
         self.admins = AdminAccessor(app)
-        # self.vk_api = VkApiAccessor(app)
-        # self.bots_manager = BotManager(app)
         self.words_game = WGAccessor(app)
         self.yandex_dict = YandexDictAccessor(app)
         self.tg_bot = TgBotAccessor(token=app.config.bot.tg_token, n=1, app=app)

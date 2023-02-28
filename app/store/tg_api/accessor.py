@@ -1,4 +1,3 @@
-from typing import Optional
 import aiohttp
 
 from app.store.tg_api.schemes import GetUpdatesResponse, SendMessageResponse, PollResultSchema
@@ -11,31 +10,31 @@ class TgClient:
     def get_url(self, method: str):
         return f"https://api.telegram.org/bot{self.token}/{method}"
 
+    async def get_updates(self, offset: int | None = None, timeout: int = 0) -> dict:
+        url = self.get_url("getUpdates")
+        params = {}
+        if offset:
+            params["offset"] = offset
+        if timeout:
+            params["timeout"] = timeout
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as resp:
+                return await resp.json()
+
+    async def get_updates_in_objects(self, offset: int | None = None, timeout: int = 0) -> GetUpdatesResponse:
+        res_dict = await self.get_updates(offset=offset, timeout=timeout)
+        try:
+            if res_dict.get("result") is not None:
+                print(res_dict)
+                return GetUpdatesResponse.Schema().load(res_dict)
+        except* ValueError as e:
+            print(f"Failed to load schema {e}")
+
     async def get_me(self) -> dict:
         url = self.get_url("getMe")
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 return await resp.json()
-
-    async def get_updates(self, offset: Optional[int] = None, timeout: int = 0) -> dict:
-        url = self.get_url("getUpdates")
-        params = {}
-        if offset:
-            params['offset'] = offset
-        if timeout:
-            params['timeout'] = timeout
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params) as resp:
-                return await resp.json()
-
-    async def get_updates_in_objects(self, offset: Optional[int] = None, timeout: int = 0) -> GetUpdatesResponse:
-        res_dict = await self.get_updates(offset=offset, timeout=timeout)
-        try:
-            if res_dict.get('result') is not None:
-                print(res_dict)
-                return GetUpdatesResponse.Schema().load(res_dict)
-        except* ValueError as e:
-            print(f"Failed to load schema {e}")
 
     async def send_message(self, chat_id: int, text: str, force_reply: bool = False) -> SendMessageResponse:
         url = self.get_url("sendMessage")

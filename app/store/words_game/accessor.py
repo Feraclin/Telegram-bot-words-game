@@ -41,15 +41,6 @@ class WGAccessor(BaseAccessor):
                                   words: str | None = None,
                                   poll_id: int | None = None,
                                   next_user_id: int | None = None) -> GameSession | None:
-        # if words:
-        #         #     query = update(GameSession).where(GameSession.id == game_id).values(status=status,
-        #         #                                                                         next_start_letter=next_letter,
-        #         #                                                                         words=words)\
-        #         #         .returning(GameSession)
-        #         # else:
-        #         #     query = update(GameSession).where(GameSession.id == game_id).values(status=status,
-        #         #                                                                         next_start_letter=next_letter) \
-        #         #         .returning(GameSession)
         query = update(GameSession).where(GameSession.id == game_id) \
             .values(status=status,
                     next_start_letter=next_letter if next_letter else GameSession.next_start_letter,

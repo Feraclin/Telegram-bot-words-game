@@ -9,8 +9,6 @@ import bson
 from aio_pika import ExchangeType, Connection
 from dotenv import find_dotenv, dotenv_values
 
-from app.store.tg_api.schemes import UpdateObj
-
 if TYPE_CHECKING:
     from app.web.app import Application
 
@@ -21,7 +19,7 @@ class RabbitMQ:
     def __init__(self,
                  app: Optional["Application"] = None,
                  host: str | None = None,
-                 port: int | None = None,
+                 port: str | None = None,
                  user: str | None = None,
                  password: str | None = None,
                  ):
@@ -138,5 +136,7 @@ if __name__ == '__main__':
         await producer.send_event(message4, delay=3000)
         await producer.send_event(message5, delay=15000)
         await consumer.listen_events()
+        await producer.disconnect()
+        await consumer.disconnect()
 
     asyncio.run(main())
