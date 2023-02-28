@@ -33,8 +33,14 @@ class Chat:
 
 @dataclass
 class PollAnswer:
-    text: str
-    voter_count: int
+    text: str | None = None
+    voter_count: int | None = None
+    poll_id: int | None = None
+    user: MessageFrom | None = None
+    option_ids: list[int] | None = None
+
+    class Meta:
+        unknown = EXCLUDE
 
 
 @dataclass
@@ -67,6 +73,7 @@ class Message:
 
 @dataclass
 class CallbackQuery:
+    id: str
     from_: MessageFrom = field(metadata={"data_key": "from"})
     message: Message
     data: str
@@ -89,6 +96,8 @@ class UpdateObj:
     message: Message | None = None
     callback_query: CallbackQuery | None = None
     my_chat_member: ChatMember | None = None
+    poll: Poll | None = None
+    poll_answer: PollAnswer | None = None
 
     Schema: ClassVar[Type[Schema]] = Schema
 

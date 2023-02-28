@@ -241,8 +241,8 @@ class Worker:
         if game:
             await self.app.store.words_game.add_user_to_team(game_id=game.id,
                                                              user_id=upd.callback_query.from_.id,)
-            await self.tg_client.send_message(chat_id=upd.callback_query.message.chat.id,
-                                              text=f'{upd.callback_query.from_.username} теперь ты в игре')
+            await self.tg_client.send_callback_alert(callback_id=upd.callback_query.id,
+                                                     text=f'{upd.callback_query.from_.username} теперь ты в игре')
 
             await asyncio.sleep(delay=5)
 

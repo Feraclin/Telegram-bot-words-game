@@ -129,3 +129,14 @@ class TgClient:
                 res_dict = await resp.json()
 
                 return PollResultSchema.Schema().load(res_dict)
+
+    async def send_callback_alert(self, callback_id: str, text: str) -> int:
+        url = self.get_url("answerCallbackQuery")
+        payload = {
+            "callback_query_id": callback_id,
+            "text": text
+                   }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as resp:
+                res_dict = await resp.json()
+                return resp.status
