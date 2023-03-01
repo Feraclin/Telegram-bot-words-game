@@ -145,15 +145,26 @@ class WGAccessor:
         await self.database.execute_query(query)
         return
 
-    async def update_team(self, game_session_id: int, user_id: int) -> None:
-        pass
-
-
+    async def update_team(self,
+                          game_session_id: int,
+                          user_id: int,
+                          point: int = 0,
+                          round_: int = 0) -> None:
+        query = update(Team).where(Team.game_sessions_id == game_session_id,
+                                   Team.player_id == user_id).values(
+            point=Team.point + point,
+            round_=Team.round_ + round_,
+        )
+        await self.database.execute_query(query)
 
     async def get_team_by_game_id(self, game_session_id: int) -> list[int]:
-        query = select(Team.player_id).where(Team.game_sessions_id == game_session_id, Team.life > 0)
+        query = select(Team.player_id, func.min(Team.round_)).where(Team.game_sessions_id == game_session_id,
+                                                                    Team.life > 0,
+                                                                    ).group_by(Team.player_id)
+
         res = await self.database.execute_query(query)
         team_lst = res.scalars().all()
+        print(team_lst)
         return team_lst
 
     async def remove_life_from_player(self,

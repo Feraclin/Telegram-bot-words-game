@@ -306,6 +306,10 @@ class Worker:
             await self.right_word(game=game, word=word)
 
     async def right_word(self, game: GameSession, word: str):
+        await self.words_game.update_team(game_session_id=game.id,
+                                          user_id=game.next_user_id,
+                                          point=1,
+                                          round_=1)
         await self.tg_client.send_message(chat_id=game.chat_id, text=f"{word} - правильно")
         last_letter = word[-1] if word[-1] not in "ьыъйё" else word[-2]
         if game.words:
