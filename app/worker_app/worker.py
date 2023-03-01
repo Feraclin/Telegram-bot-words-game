@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 import bson
 from sqlalchemy.exc import IntegrityError
 
-from app.store.bot_tg.constant import help_msg
-from app.store.tg_api.accessor import TgClient
+from app.worker_app.constant import help_msg
+from app.store.tg_api.client import TgClient
 from app.store.tg_api.schemes import UpdateObj
 from app.words_game.models import GameSession
 

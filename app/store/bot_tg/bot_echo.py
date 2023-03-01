@@ -2,7 +2,7 @@ import asyncio
 
 from dotenv import find_dotenv, dotenv_values
 
-from app.store.tg_api.accessor import TgClient
+from app.store.tg_api.client import TgClient
 
 found_dotenv = find_dotenv(filename='.env')
 config_env = dotenv_values(found_dotenv)

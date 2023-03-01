@@ -2,21 +2,23 @@ import asyncio
 import logging
 from asyncio import Task
 
-import aiohttp
-from dotenv import find_dotenv, dotenv_values
 
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
-from app.store.tg_api.accessor import TgClient
-from app.store.tg_api.schemes import UpdateObj, GetUpdatesResponse
+from app.store.tg_api.client import TgClient
+from app.store.tg_api.schemes import UpdateObj
+from app.web.config import ConfigEnv, config
 
 
 class Poller:
-    def __init__(self, token: str, host: str, port: str, user: str, password: str):
+    def __init__(self, cfg: ConfigEnv):
         self.logger = logging.getLogger("poller")
         logging.basicConfig(level=logging.INFO)
         self._task: Task | None = None
-        self.TgClient = TgClient(token=token)
-        self.rabbitMQ = RabbitMQ(host=host, port=port, user=user, password=password)
+        self.TgClient = TgClient(token=cfg.tg_token.tg_token)
+        self.rabbitMQ = RabbitMQ(host=cfg.rabbitmq.host,
+                                 port=cfg.rabbitmq.port,
+                                 user=cfg.rabbitmq.user,
+                                 password=cfg.rabbitmq.password)
 
     async def _worker(self):
         offset = 0
@@ -43,15 +45,7 @@ class Poller:
 
 if __name__ == "__main__":
 
-    found_dotenv = find_dotenv(filename=".env")
-    config_env = dotenv_values(found_dotenv)
-    host = config_env.get("RABBITMQ_DEFAULT_HOST")
-    port = config_env.get("RABBITMQ_DEFAULT_PORT")
-    user = config_env.get("RABBITMQ_DEFAULT_USER")
-    password = config_env.get("RABBITMQ_DEFAULT_PASS")
-    token = config_env.get("BOT_TOKEN_TG")
-
-    poller = Poller(token=token, host=host, port=port, user=user, password=password)
+    poller = Poller(cfg=config)
 
     loop = asyncio.new_event_loop()
 

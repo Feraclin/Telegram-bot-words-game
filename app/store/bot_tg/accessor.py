@@ -3,8 +3,7 @@
 from typing import TYPE_CHECKING, Optional
 
 from app.base.base_accessor import BaseAccessor
-from app.poller_app.poller import Poller
-from app.store.bot_tg.worker import Worker
+from app.worker_app.worker import Worker
 
 if TYPE_CHECKING:
     from app.web.app import Application
