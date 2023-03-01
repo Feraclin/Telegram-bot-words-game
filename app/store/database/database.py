@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_scoped_session, create_async_engine, \
@@ -12,14 +12,14 @@ if TYPE_CHECKING:
 
 
 class Database:
-    def __init__(self, app: "Application"):
+    def __init__(self, app: Optional["Application"] = None, url: Optional[str] = None):
         self.app = app
         self.URL_DB = URL.create(drivername="postgresql+asyncpg",
                                  host=app.config.database.host,
                                  database=app.config.database.database,
                                  username=app.config.database.user,
                                  password=app.config.database.password,
-                                 port=app.config.database.port)
+                                 port=app.config.database.port) if app else url
         self.engine_: AsyncEngine | None = None
         self.db_: DeclarativeBase | None = None
         self.session: AsyncSession | async_scoped_session | sessionmaker | async_sessionmaker | None = None

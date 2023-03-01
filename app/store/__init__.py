@@ -1,6 +1,6 @@
 import typing
 
-from app.store.bot_tg.bot_tg import TgBotAccessor
+from app.store.bot_tg.accessor import TgBotAccessor
 from app.store.database.database import Database
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 from app.store.words_game.accessor import WGAccessor
