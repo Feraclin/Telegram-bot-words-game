@@ -1617,6 +1617,20 @@ files = [
 ]
 
 [[package]]
+name = "rabbitmq"
+version = "0.2.0"
+description = "CFFI bindings to librabbitmq 0.8.0"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "rabbitmq-0.2.0-py2.py3-none-any.whl", hash = "sha256:74cfbc0f365019a8f318cd1ad9b1f85682768568fa3816740df37509a6dfbc2d"},
+]
+
+[package.dependencies]
+cffi = "*"
+
+[[package]]
 name = "requests"
 version = "2.28.2"
 description = "Python HTTP for Humans."
@@ -2016,4 +2030,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "9adbaffe8ff2d64b930ef9f24260d5a04e822d2b54ca5748de5a0bc8fcdeb4b8"
+content-hash = "fda3001a50dfc35b25ac76e358de14691d3b923d5c2d1e309fe7c14fc9ee9b87"

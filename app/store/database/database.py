@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import URL
@@ -7,22 +8,33 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.store.database import DB
 
+
 if TYPE_CHECKING:
     from app.web.app import Application
+    from app.web.config import ConfigEnv
 
 
 class Database:
-    def __init__(self, app: Optional["Application"] = None, url: Optional[str] = None):
-        self.app = app
-        self.URL_DB = URL.create(drivername="postgresql+asyncpg",
-                                 host=app.config.database.host,
-                                 database=app.config.database.database,
-                                 username=app.config.database.user,
-                                 password=app.config.database.password,
-                                 port=app.config.database.port) if app else url
+    def __init__(self, app: Optional["Application"] = None, cfg: Optional["ConfigEnv"] = None,):
+        if app:
+            self.app = app
+            self.URL_DB = URL.create(drivername="postgresql+asyncpg",
+                                     host=app.config.database.host,
+                                     database=app.config.database.database,
+                                     username=app.config.database.user,
+                                     password=app.config.database.password,
+                                     port=app.config.database.port)
+        elif cfg:
+            self.URL_DB = URL.create(drivername="postgresql+asyncpg",
+                                     host=cfg.database.host,
+                                     database=cfg.database.database,
+                                     username=cfg.database.user,
+                                     password=cfg.database.password,
+                                     port=cfg.database.port)
         self.engine_: AsyncEngine | None = None
         self.db_: DeclarativeBase | None = None
         self.session: AsyncSession | async_scoped_session | sessionmaker | async_sessionmaker | None = None
+        self.logger = logging.getLogger('database')
 
     async def connect(self, *_: list, **__: dict) -> None:
         self.db_ = DB
@@ -35,8 +47,6 @@ class Database:
             expire_on_commit=False,
             autoflush=True,
         )
-        await self.app.store.admins.create_admin(email=self.app.config.admin.email,
-                                                 password=self.app.config.admin.password)
 
     async def execute_query(self,
                             query):
@@ -61,4 +71,7 @@ class Database:
         await self.engine_.dispose()
 
     async def disconnect(self, *_: list, **__: dict) -> None:
-        pass
+        try:
+            await self.engine_.dispose()
+        except Exception as e:
+            self.logger.info(f'Disconnect from engine error {e}')

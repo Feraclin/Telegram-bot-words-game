@@ -32,6 +32,7 @@ bson = "^0.5.10"
 aio-pika = "^8.3.0"
 translate = "^3.6.1"
 black = "^23.1.0"
+rabbitmq = "^0.2.0"
 
 [build-system]
 requires = ["poetry-core"]

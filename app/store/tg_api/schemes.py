@@ -100,7 +100,7 @@ class ChatMember:
 
 @dataclass
 class UpdateObj:
-    update_id: int
+    update_id: int | None = None
     message: Message | None = None
     callback_query: CallbackQuery | None = None
     my_chat_member: ChatMember | None = None

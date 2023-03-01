@@ -105,7 +105,7 @@ class TgClient:
 
     async def remove_inline_keyboard(self,
                                      message_id: int,
-                                     chat_id: int):
+                                     chat_id: int) -> SendMessageResponse:
         url = self.get_url("editMessageReplyMarkup")
         payload = {
             "chat_id": chat_id,

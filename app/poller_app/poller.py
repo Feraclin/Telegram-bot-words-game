@@ -52,6 +52,7 @@ if __name__ == "__main__":
     try:
         loop.create_task(poller.start())
         loop.run_forever()
+
     except KeyboardInterrupt:
         pass
     finally:

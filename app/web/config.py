@@ -37,7 +37,7 @@ class TgConfig:
 @dataclass
 class DatabaseConfig:
     host: str
-    port: str
+    port: int
     user: str
     password: str
     database: str
@@ -106,11 +106,11 @@ class ConfigEnv:
 
 config = ConfigEnv(
     database=DatabaseConfig(
-        host=config_env.get("DATABASE_DEFAULT_HOST"),
-        port=config_env.get("DATABASE_DEFAULT_PORT"),
-        user=config_env.get("DATABASE_DEFAULT_USER"),
-        password=config_env.get("DATABASE_DEFAULT_PASS"),
-        database=config_env.get("DATABASE_DEFAULT_DB"),
+        host=config_env.get("POSTGRES_DEFAULT_HOST"),
+        port=int(config_env.get("POSTGRES_DEFAULT_PORT")),
+        user=config_env.get("POSTGRES_DEFAULT_USER"),
+        password=config_env.get("POSTGRES_DEFAULT_PASS"),
+        database=config_env.get("POSTGRES_DEFAULT_DB"),
     ),
     rabbitmq=RabbitMQ(
         host=config_env.get("RABBITMQ_DEFAULT_HOST"),
