@@ -30,12 +30,17 @@ class BotConfig:
 
 
 @dataclass
+class TgConfig:
+    tg_token: str
+
+
+@dataclass
 class DatabaseConfig:
-    host: str = "localhost"
-    port: int = 5432
-    user: str = "postgres"
-    password: str = "postgres"
-    database: str = "project"
+    host: str
+    port: str
+    user: str
+    password: str
+    database: str
 
 
 @dataclass
@@ -43,13 +48,12 @@ class RabbitMQ:
     user: str
     password: str
     host: str
-    port: int
+    port: str
 
 
 @dataclass
 class YandexDictConfig:
     token: str
-
 
 
 @dataclass
@@ -90,3 +94,32 @@ def setup_config(app: "Application", config_path: str):
             token=config_env['YANDEX_DICT_TOKEN'],
         ),
     )
+
+
+@dataclass
+class ConfigEnv:
+    database: DatabaseConfig = None
+    rabbitmq: RabbitMQ = None
+    yandex_dict: YandexDictConfig = None
+    tg_token: TgConfig = None
+
+
+config = ConfigEnv(
+    database=DatabaseConfig(
+        host=config_env.get("DATABASE_DEFAULT_HOST"),
+        port=config_env.get("DATABASE_DEFAULT_PORT"),
+        user=config_env.get("DATABASE_DEFAULT_USER"),
+        password=config_env.get("DATABASE_DEFAULT_PASS"),
+        database=config_env.get("DATABASE_DEFAULT_DB"),
+    ),
+    rabbitmq=RabbitMQ(
+        host=config_env.get("RABBITMQ_DEFAULT_HOST"),
+        port=config_env.get("RABBITMQ_DEFAULT_PORT"),
+        user=config_env.get("RABBITMQ_DEFAULT_USER"),
+        password=config_env.get("RABBITMQ_DEFAULT_PASS"),
+    ),
+    yandex_dict=YandexDictConfig(
+        token=config_env['YANDEX_DICT_TOKEN'],
+    ),
+    tg_token=TgConfig(tg_token=config_env['BOT_TOKEN_TG'])
+)
