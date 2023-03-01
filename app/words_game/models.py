@@ -9,6 +9,7 @@ class User(MappedAsDataclass, DB):
 
     id: Mapped[bigint] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(nullable=False)
+    total_point: Mapped[int] = mapped_column(nullable=True, default=0)
 
 
 class GameSession(MappedAsDataclass, DB):
@@ -39,6 +40,8 @@ class Team(MappedAsDataclass, DB):
     game_session: Mapped[GameSession] = relationship(GameSession, backref="teams")
     players: Mapped[list[User]] = relationship(User, backref="teams")
     life: Mapped[int] = mapped_column(default=3)
+    round_: Mapped[int] = mapped_column(nullable=True, default=0)
+    point: Mapped[int] = mapped_column(nullable=True, default=0)
 
 
 class UsedCity(MappedAsDataclass, DB):
