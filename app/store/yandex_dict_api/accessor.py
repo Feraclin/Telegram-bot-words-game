@@ -1,11 +1,9 @@
 import asyncio
 import aiohttp
-from dotenv import find_dotenv, dotenv_values
 from app.store.yandex_dict_api.schemas import Word
 from dataclasses import dataclass
 
-found_dotenv = find_dotenv(filename=".env")
-config_env = dotenv_values(found_dotenv)
+from app.web.config import config_env
 
 
 @dataclass

@@ -1,13 +1,8 @@
 import asyncio
 import logging
 
-from dotenv import find_dotenv, dotenv_values
-
 from app.store.tg_api.client import TgClient
-
-found_dotenv = find_dotenv(filename='.env')
-config_env = dotenv_values(found_dotenv)
-token_tg = config_env['BOT_TOKEN_TG']
+from app.web.config import config
 
 
 class EchoBot:
@@ -44,7 +39,7 @@ if __name__ == '__main__':
     echo = EchoBot()
     loop = asyncio.new_event_loop()
     try:
-        loop.create_task(echo.start(token=token_tg))
+        loop.create_task(echo.start(token=config.tg_token.tg_token))
         loop.run_forever()
     except KeyboardInterrupt:
         pass
