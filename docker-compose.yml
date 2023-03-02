@@ -25,12 +25,29 @@ services:
   rabbitmq:
     image: heidiks/rabbitmq-delayed-message-exchange:latest
     restart: always
-    environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=password
+    env_file:
+      - ./.env_dev
+#    environment:
+#      - RABBITMQ_DEFAULT_USER=admin
+#      - RABBITMQ_DEFAULT_PASS=password
     ports:
       - "5673:5672"
       - "15673:15672"
+    networks:
+      - kts_st_week3
+
+  webapp:
+    build: .
+    restart: always
+    env_file:
+      - ./.env_dev
+    command: bash -c "poetry run alembic upgrade head && poetry run python main.py"
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+      - rabbitmq
+      - adminer
     networks:
       - kts_st_week3
 
