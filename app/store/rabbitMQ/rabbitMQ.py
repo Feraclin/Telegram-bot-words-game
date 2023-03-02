@@ -9,6 +9,8 @@ import bson
 from aio_pika import ExchangeType, Connection
 from dotenv import find_dotenv, dotenv_values
 
+from app.web.config import config_env
+
 if TYPE_CHECKING:
     from app.web.app import Application
 
@@ -115,8 +117,6 @@ class RabbitMQ:
 
 
 if __name__ == "__main__":
-    found_dotenv = find_dotenv(filename=".env")
-    config_env = dotenv_values(found_dotenv)
     host_test = config_env.get("RABBITMQ_DEFAULT_HOST")
     port_test = config_env.get("RABBITMQ_DEFAULT_PORT")
     user_test = config_env.get("RABBITMQ_DEFAULT_USER")
