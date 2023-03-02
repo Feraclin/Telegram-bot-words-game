@@ -103,6 +103,7 @@ celerybeat.pid
 
 # Environments
 .env
+.envdev
 .env_dev
 .venv
 env/
@@ -134,5 +135,5 @@ dmypy.json
 
 # Temporary Trash
 .temp!/.env
-!/.env_dev
-!/.env_dev
+!/.envdev
+!/.envdev
