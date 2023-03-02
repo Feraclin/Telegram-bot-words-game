@@ -36,18 +36,58 @@ services:
     networks:
       - kts_st_week3
 
-  webapp:
-    build: .
+#  webapp:
+#    build: .
+#    restart: always
+#    env_file:
+#      - ./.env_dev
+#    command: bash -c "poetry run alembic upgrade head && poetry run python main.py"
+#    ports:
+#      - 8080:8080
+#    depends_on:
+#      - db
+#      - rabbitmq
+#      - adminer
+#    networks:
+#      - kts_st_week3
+
+  poller_app:
+    build:
+      context: .
+      dockerfile: ./compose/poller/Dockerfile
     restart: always
     env_file:
       - ./.env_dev
-    command: bash -c "poetry run alembic upgrade head && poetry run python main.py"
-    ports:
-      - 8080:8080
+    command: bash -c "poetry run python app/poller_app/poller.py"
     depends_on:
       - db
       - rabbitmq
-      - adminer
+    networks:
+      - kts_st_week3
+
+  worker_app:
+    build:
+      context: .
+      dockerfile: .compose/worker/Dockerfile
+    restart: always
+    env_file:
+      - ./.env_dev
+    command: bash -c "poetry run alembic upgrade head && cd ../app/worker_app && poetry run python worker_app.py"
+    depends_on:
+      - poller_app
+    networks:
+      - kts_st_week3
+
+  aiohttp_app:
+    build:
+      context: .
+      dockerfile: .compose/aiohttp/Dockerfile
+    restart: always
+    env_file:
+      - ./.env_dev
+    command: bash -c "cd ../app/web && poetry run python app.py"
+    depends_on:
+      - worker_app
     networks:
       - kts_st_week3
 
