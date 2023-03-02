@@ -2,5 +2,5 @@
 .pytest_cache
 .htmlcov
 tests
-.env_dev
+.envdev
 .gitignore
