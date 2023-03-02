@@ -136,4 +136,5 @@ dmypy.json
 # Temporary Trash
 .temp!/.env
 !/.envdev
-!/.envdev
+/.env_dev
+/.envdev
