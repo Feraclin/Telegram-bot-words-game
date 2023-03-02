@@ -91,7 +91,7 @@ class WGAccessor:
         return res.scalar_one_or_none()
 
     async def update_user(self, user_id: int, point) -> User | None:
-        query = update(User).where(User.id == user_id)
+        query = update(User).where(User.id == user_id).values(total_point=User.total_point + point)
         res = await self.database.execute_query(query)
         return res.scalar_one_or_none()
 

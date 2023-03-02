@@ -8,6 +8,7 @@ from app.store.database.sqlalchemy_base import DB
 if TYPE_CHECKING:
     from aiohttp_session import Session
 
+
 @dataclass
 class Admin:
     id: int

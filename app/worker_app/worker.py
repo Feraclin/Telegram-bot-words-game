@@ -2,7 +2,6 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from random import choice
-from typing import TYPE_CHECKING
 
 import bson
 from sqlalchemy.exc import IntegrityError
@@ -43,7 +42,6 @@ class Worker:
         self.yandex_dict = YandexDictAccessor(token=self.cfg.yandex_dict.token)
 
     async def handle_update(self, upd: UpdateObj):
-        # self.logger.info(upd)
         if upd.message:
             try:
                 match upd.message.text:
