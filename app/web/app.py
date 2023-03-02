@@ -3,7 +3,7 @@ from typing import Optional
 from aiohttp.web import (
     Application as AiohttpApplication,
     Request as AiohttpRequest,
-    View as AiohttpView,
+    View as AiohttpView, run_app,
 )
 from aiohttp_apispec import setup_aiohttp_apispec
 from aiohttp_session import setup as session_setup
@@ -66,3 +66,7 @@ def setup_app() -> Application:
     setup_middlewares(app)
     setup_store(app)
     return app
+
+
+if __name__ == "__main__":
+    run_app(setup_app())
