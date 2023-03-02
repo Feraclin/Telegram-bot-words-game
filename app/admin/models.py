@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.store.database.sqlalchemy_base import DB
-
+if TYPE_CHECKING:
+    from aiohttp_session import Session
 
 @dataclass
 class Admin:
@@ -17,7 +18,7 @@ class Admin:
         return self.password == sha256(password.encode()).hexdigest()
 
     @classmethod
-    def from_session(cls, session: dict | None) -> Optional["Admin"]:
+    def from_session(cls, session: Optional["Session"]) -> Optional["Admin"]:
         return cls(id=session["admin"]["id"], email=session["admin"]["email"])
 
     def check_password(self, password) -> bool:

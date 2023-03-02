@@ -72,7 +72,7 @@ class Message:
     from_: MessageFrom = field(metadata={"data_key": "from"})
     chat: Chat
     date: int
-    text: str | None = 'Картинки не смотрю'
+    text: str | None = "Картинки не смотрю"
     poll: Poll | None = None
 
     class Meta:

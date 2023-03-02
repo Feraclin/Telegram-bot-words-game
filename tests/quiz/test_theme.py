@@ -61,7 +61,7 @@ class TestThemeStore:
 class TestThemeAddView:
     async def test_unauthorized(self, cli):
         resp = await cli.post(
-            "/quiz.add_theme",
+            "/quiz_accessor.add_theme",
             json={
                 "title": "web-development",
             },
@@ -72,7 +72,7 @@ class TestThemeAddView:
 
     async def test_success(self, store: Store, authed_cli):
         resp = await authed_cli.post(
-            "/quiz.add_theme",
+            "/quiz_accessor.add_theme",
             json={
                 "title": "web-development",
             },
@@ -94,21 +94,21 @@ class TestThemeAddView:
         assert len(themes) == 1
 
     async def test_missing_title(self, authed_cli):
-        resp = await authed_cli.post("/quiz.add_theme", json={})
+        resp = await authed_cli.post("/quiz_accessor.add_theme", json={})
         assert resp.status == 400
         data = await resp.json()
         assert data["status"] == "bad_request"
         assert data["data"]["title"][0] == "Missing data for required field."
 
     async def test_different_method(self, authed_cli):
-        resp = await authed_cli.get("/quiz.add_theme", json={})
+        resp = await authed_cli.get("/quiz_accessor.add_theme", json={})
         assert resp.status == 405
         data = await resp.json()
         assert data["status"] == "not_implemented"
 
     async def test_conflict(self, authed_cli, theme_1: Theme):
         resp = await authed_cli.post(
-            "/quiz.add_theme",
+            "/quiz_accessor.add_theme",
             json={
                 "title": theme_1.title,
             },
@@ -120,25 +120,25 @@ class TestThemeAddView:
 
 class TestThemeList:
     async def test_unauthorized(self, cli):
-        resp = await cli.get("/quiz.list_themes")
+        resp = await cli.get("/quiz_accessor.list_themes")
         assert resp.status == 401
         data = await resp.json()
         assert data["status"] == "unauthorized"
 
     async def test_empty(self, authed_cli):
-        resp = await authed_cli.get("/quiz.list_themes")
+        resp = await authed_cli.get("/quiz_accessor.list_themes")
         assert resp.status == 200
         data = await resp.json()
         assert data == ok_response(data={"themes": []})
 
     async def test_one(self, authed_cli, theme_1):
-        resp = await authed_cli.get("/quiz.list_themes")
+        resp = await authed_cli.get("/quiz_accessor.list_themes")
         assert resp.status == 200
         data = await resp.json()
         assert data == ok_response(data={"themes": [theme2dict(theme_1)]})
 
     async def test_several(self, authed_cli, theme_1, theme_2):
-        resp = await authed_cli.get("/quiz.list_themes")
+        resp = await authed_cli.get("/quiz_accessor.list_themes")
         assert resp.status == 200
         data = await resp.json()
         assert data == ok_response(
@@ -146,7 +146,7 @@ class TestThemeList:
         )
 
     async def test_different_method(self, authed_cli):
-        resp = await authed_cli.post("/quiz.list_themes")
+        resp = await authed_cli.post("/quiz_accessor.list_themes")
         assert resp.status == 405
         data = await resp.json()
         assert data["status"] == "not_implemented"
@@ -155,7 +155,7 @@ class TestThemeList:
 class TestIntegration:
     async def test_success(self, authed_cli):
         resp = await authed_cli.post(
-            "/quiz.add_theme",
+            "/quiz_accessor.add_theme",
             json={
                 "title": "integration",
             },
@@ -164,7 +164,7 @@ class TestIntegration:
         data = await resp.json()
         theme_id = data["data"]["id"]
 
-        resp = await authed_cli.get("/quiz.list_themes")
+        resp = await authed_cli.get("/quiz_accessor.list_themes")
         assert resp.status == 200
         data = await resp.json()
         assert data == ok_response(

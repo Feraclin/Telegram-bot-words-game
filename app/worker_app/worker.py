@@ -265,7 +265,7 @@ class Worker:
         player = await self.words_game.select_user_by_id(choice(team) if not player else player)
 
         game.next_user_id = player.id
-        await self.words_game.add_user_to_game_session(game_id=game.id, user_id=player.id)
+        await self.words_game.change_next_user_to_game_session(game_id=game.id, user_id=player.id)
         if game.next_start_letter:
             await self.tg_client.send_message(
                 chat_id=game.chat_id,

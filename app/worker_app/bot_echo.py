@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from dotenv import find_dotenv, dotenv_values
 
@@ -12,6 +13,7 @@ token_tg = config_env['BOT_TOKEN_TG']
 class EchoBot:
     flag: bool = True
     task_: asyncio.Task | None = None
+    logger: logging.Logger = logging.getLogger(__name__)
 
     async def run_echo(self, token: str = token_tg):
         c = TgClient(token=token)
@@ -20,8 +22,8 @@ class EchoBot:
         while self.flag:
             res = await c.get_updates_in_objects(offset=offset, timeout=10)
             for item in res.result:
-                print(item)
                 offset = item.update_id + 1
+                self.logger.info(f'New update: {item}')
                 if item.message:
                     if item.message.text == 'stop':
                         loop.stop()

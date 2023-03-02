@@ -25,20 +25,20 @@ class GameSession(MappedAsDataclass, DB):
     user: Mapped[User] = relationship(User, lazy="joined", foreign_keys=[user_id])
     winner_id: Mapped[bigint] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     winner: Mapped[User] = relationship(User, lazy="joined", foreign_keys=[winner_id])
-    status: Mapped[bool] = mapped_column(nullable=False, default=False)
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=False)
     next_start_letter: Mapped[str] = mapped_column(default=None, nullable=True)
     current_poll_id: Mapped[bigint] = mapped_column(default=None, nullable=True)
 
 
-class Team(MappedAsDataclass, DB):
-    __tablename__ = "teams"
+class UserGameSession(MappedAsDataclass, DB):
+    __tablename__ = "user_game_sessions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
     game_sessions_id: Mapped[int] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"))
     player_id: Mapped[bigint] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    game_session: Mapped[GameSession] = relationship(GameSession, backref="teams")
-    players: Mapped[list[User]] = relationship(User, backref="teams")
+    game_session: Mapped[GameSession] = relationship(GameSession, backref="user_game_sessions")
+    players: Mapped[list[User]] = relationship(User, backref="user_game_sessions")
     life: Mapped[int] = mapped_column(default=3)
     round_: Mapped[int] = mapped_column(nullable=True, default=0)
     point: Mapped[int] = mapped_column(nullable=True, default=0)
@@ -59,3 +59,20 @@ class City(MappedAsDataclass, DB):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False)
+
+
+class Words(MappedAsDataclass, DB):
+    __tablename__ = "words"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    word: Mapped[str] = mapped_column(nullable=False, unique=True)
+
+
+class WordsInGame(MappedAsDataclass, DB):
+    __tablename__ = "words_in_game"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_session_id: Mapped[int] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"))
+    word_id: Mapped[int] = mapped_column(ForeignKey("words.id", ondelete="CASCADE"))
+    game_session: Mapped[GameSession] = relationship(GameSession, backref="words_in_game", lazy="joined")
+    word: Mapped[Words] = relationship(Words, backref="words_in_game", lazy="joined")

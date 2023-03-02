@@ -8,7 +8,4 @@ list_str = Annotated[list[str], "list"]
 
 
 class DB(DeclarativeBase):
-    type_annotation_map = {
-        bigint: BigInteger,
-        list_str: ARRAY(String)
-    }
+    type_annotation_map = {bigint: BigInteger, list_str: ARRAY(String)}

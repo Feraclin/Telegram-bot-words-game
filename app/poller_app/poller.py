@@ -2,7 +2,7 @@ import asyncio
 import logging
 from asyncio import Task
 
-
+from app.poller_app.constnant import get_update_timeout
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 from app.store.tg_api.client import TgClient
 from app.store.tg_api.schemes import UpdateObj
@@ -20,7 +20,7 @@ class Poller:
                                  user=cfg.rabbitmq.user,
                                  password=cfg.rabbitmq.password)
 
-    async def _worker(self):
+    async def _poll(self):
         offset = 0
         while True:
             print("poller")
@@ -29,12 +29,11 @@ class Poller:
                 offset = u.update_id + 1
                 upd = UpdateObj.Schema().dump(u)
                 self.logger.info(u)
-                print(u)
                 await self.rabbitMQ.send_event(message=upd)
-                await asyncio.sleep(1 / 20)
+                await asyncio.sleep(get_update_timeout)
 
     async def start(self):
-        self._task = asyncio.create_task(self._worker())
+        self._task = asyncio.create_task(self._poll())
         await self.rabbitMQ.connect()
 
     async def stop(self):
