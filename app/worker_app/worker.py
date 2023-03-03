@@ -155,7 +155,7 @@ class Worker:
     async def start(self):
         await self.database.connect()
         await self.rabbitMQ.connect()
-        self._tasks = [asyncio.create_task(self._worker_rabbit()) for _ in range(1)]
+        self._tasks = [asyncio.create_task(self._worker_rabbit()) for _ in range(self.concurrent_workers)]
 
     async def stop(self):
         for t in self._tasks:
