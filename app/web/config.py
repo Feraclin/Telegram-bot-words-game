@@ -114,6 +114,3 @@ config = ConfigEnv(
     ),
     tg_token=TgConfig(tg_token=config_env['BOT_TOKEN_TG'])
 )
-
-
-print(config)

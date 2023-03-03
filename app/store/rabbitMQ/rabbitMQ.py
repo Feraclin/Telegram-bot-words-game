@@ -12,6 +12,8 @@ from app.web.config import config_env
 
 from app.web.config import config_env
 
+from app.web.config import config_env
+
 if TYPE_CHECKING:
     from app.web.app import Application
 
