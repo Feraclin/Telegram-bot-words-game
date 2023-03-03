@@ -1,5 +1,4 @@
 import asyncio
-import os
 import signal
 
 from aiohttp.web_runner import AppRunner, TCPSite

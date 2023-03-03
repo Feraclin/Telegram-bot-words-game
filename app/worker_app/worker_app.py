@@ -1,7 +1,7 @@
 import asyncio
 
 from app.web.config import config
-from app.worker_app.worker import Worker
+from worker import Worker
 
 
 if __name__ == "__main__":

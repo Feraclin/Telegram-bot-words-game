@@ -31,6 +31,7 @@ COPY poetry.lock pyproject.toml /code/
 
 RUN poetry install --no-interaction --no-ansi
 
-COPY ./app/poller_app  /code/app/
-COPY ./app/store/rabbitMQ ./app/store/tg_api /code/app/store/
-COPY ./app/web/config.py /code/app/web/
+COPY ./app/poller_app/  /code/app/poller_app/
+COPY ./app/store/rabbitMQ/  /code/app/poller_app/app/store/rabbitMQ/
+COPY ./app/store/tg_api/   /code/app/poller_app/app/store/tg_api/
+COPY ./app/web/config.py/ /code/app/poller_app/app/web/

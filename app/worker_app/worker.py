@@ -5,7 +5,7 @@ from random import choice
 
 import bson
 from sqlalchemy.exc import IntegrityError
-from app.worker_app.constant import help_msg
+from constant import help_msg
 from app.store.tg_api.client import TgClient
 from app.store.tg_api.schemes import UpdateObj, SendMessageResponse
 from app.words_game.models import GameSession

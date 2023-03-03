@@ -3,7 +3,7 @@ from typing import Optional
 from aiohttp.web import (
     Application as AiohttpApplication,
     Request as AiohttpRequest,
-    View as AiohttpView, run_app,
+    View as AiohttpView
 )
 from aiohttp_apispec import setup_aiohttp_apispec
 from aiohttp_session import setup as session_setup
@@ -61,12 +61,8 @@ def setup_app() -> Application:
     session_setup(app, EncryptedCookieStorage(app.config.session.key))
     setup_routes(app)
     setup_aiohttp_apispec(
-        app, title="Vk Quiz Bot", url="/docs/json", swagger_path="/docs"
+        app, title="TG words Bot", url="/docs/json", swagger_path="/docs"
     )
     setup_middlewares(app)
     setup_store(app)
     return app
-
-
-if __name__ == "__main__":
-    run_app(setup_app())
