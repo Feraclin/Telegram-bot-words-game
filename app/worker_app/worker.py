@@ -254,6 +254,8 @@ class Worker:
             "resize_keyboard": True,
             "one_time_keyboard": True,
         }
+        if await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id):
+            return
         async with asyncio.Lock():
             await self.words_game.create_game_session(
                 user_id=upd.message.from_.id,

@@ -36,7 +36,7 @@ class WGAccessor:
 
     async def create_game_session(self, user_id: int, chat_id: int, chat_type: str) -> GameSession:
         query = insert(GameSession).values(
-            user_id=user_id, chat_id=chat_id, game_type=chat_type, status=True
+            creator_id=user_id, chat_id=chat_id, game_type=chat_type, is_active=True
         )
         res = await self.database.execute_query(query)
         return res.scalar()
@@ -54,7 +54,7 @@ class WGAccessor:
             update(GameSession)
             .where(GameSession.id == game_id)
             .values(
-                status=status,
+                is_active=status,
                 next_start_letter=next_letter if next_letter else GameSession.next_start_letter,
                 words=words if words else GameSession.words,
                 current_poll_id=poll_id if poll_id else GameSession.current_poll_id,
