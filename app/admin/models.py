@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,7 +19,7 @@ class Admin:
         return self.password == sha256(password.encode()).hexdigest()
 
     @classmethod
-    def from_session(cls, session: Optional["Session"]) -> Optional["Admin"]:
+    def from_session(cls, session: Union["Session", dict]) -> Optional["Admin"]:
         return cls(id=session["admin"]["id"], email=session["admin"]["email"])
 
     def check_password(self, password) -> bool:
