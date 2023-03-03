@@ -5,7 +5,7 @@ services:
     image: postgres
     restart: always
     env_file:
-      - .envdev
+      - .env_dev
     ports:
       - '5434:5432'
     volumes:
@@ -26,10 +26,7 @@ services:
     image: heidiks/rabbitmq-delayed-message-exchange:latest
     restart: always
     env_file:
-      - .envdev
-#    environment:
-#      - RABBITMQ_DEFAULT_USER=admin
-#      - RABBITMQ_DEFAULT_PASS=password
+      - .env_dev
     ports:
       - "5673:5672"
       - "15673:15672"
@@ -40,7 +37,7 @@ services:
 #    build: .
 #    restart: always
 #    env_file:
-#      - ./.envdev
+#      - ./.env_dev
 #    command: bash -c "poetry run alembic upgrade head && poetry run python main.py"
 #    ports:
 #      - 8080:8080
@@ -57,7 +54,7 @@ services:
       dockerfile: ./compose/poller/Dockerfile
     restart: always
     env_file:
-      - .envdev
+      - .env_dev
     command: bash -c "poetry run python app/poller_app/poller.py"
     depends_on:
       - db
@@ -71,7 +68,7 @@ services:
       dockerfile: .compose/worker/Dockerfile
     restart: always
     env_file:
-      - .envdev
+      - .env_dev
     command: bash -c "poetry run alembic upgrade head && cd ../app/worker_app && poetry run python worker_app.py"
     depends_on:
       - poller_app
@@ -84,7 +81,7 @@ services:
       dockerfile: .compose/aiohttp/Dockerfile
     restart: always
     env_file:
-      - .envdev
+      - .env_dev
     command: bash -c "cd ../app/web && poetry run python app.py"
     depends_on:
       - worker_app
