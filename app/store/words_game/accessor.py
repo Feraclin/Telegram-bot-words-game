@@ -22,16 +22,22 @@ class WGAccessor:
         self, user_id: int | None = None, chat_id: int | None = None
     ) -> GameSession | None:
         if user_id:
-            query = select(GameSession).where(GameSession.creator_id == user_id, GameSession.is_active == True)
+            query = select(GameSession).where(
+                GameSession.creator_id == user_id, GameSession.is_active == True
+            )
         elif chat_id:
-            query = select(GameSession).where(GameSession.chat_id == chat_id, GameSession.is_active == True)
+            query = select(GameSession).where(
+                GameSession.chat_id == chat_id, GameSession.is_active == True
+            )
         else:
             return None
         res = await self.database.execute_query(query)
         return res.scalar()
 
     async def create_game_session(self, user_id: int, chat_id: int, chat_type: str) -> GameSession:
-        query = insert(GameSession).values(user_id=user_id, chat_id=chat_id, game_type=chat_type, status=True)
+        query = insert(GameSession).values(
+            user_id=user_id, chat_id=chat_id, game_type=chat_type, status=True
+        )
         res = await self.database.execute_query(query)
         return res.scalar()
 
@@ -65,7 +71,9 @@ class WGAccessor:
         res = await self.database.execute_query(query)
         return res.scalar()
 
-    async def change_next_user_to_game_session(self, game_id: int, user_id: int) -> GameSession | None:
+    async def change_next_user_to_game_session(
+        self, game_id: int, user_id: int
+    ) -> GameSession | None:
         query = (
             update(GameSession)
             .where(GameSession.id == game_id, GameSession.is_active == True)
@@ -101,8 +109,12 @@ class WGAccessor:
         if not letter:
             letter = choice(list("АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЭЮЯ"))
         query = select(func.count(City.id)).where(City.name.like(f"{letter}%"))
-        city_count = city_count if city_count else (await self.database.execute_query(query)).scalar()
-        query = select(City).where(City.name.like(f"{letter}%")).offset(randint(0, city_count)).limit(1)
+        city_count = (
+            city_count if city_count else (await self.database.execute_query(query)).scalar()
+        )
+        query = (
+            select(City).where(City.name.like(f"{letter}%")).offset(randint(0, city_count)).limit(1)
+        )
         res = await self.database.execute_query(query)
         city = res.scalar_one_or_none()
         if not city:
@@ -121,7 +133,9 @@ class WGAccessor:
         return city
 
     async def check_city_in_used(self, city_id: int, game_session_id: int) -> bool:
-        query = select(UsedCity).where(UsedCity.city_id == city_id, UsedCity.game_session_id == game_session_id)
+        query = select(UsedCity).where(
+            UsedCity.city_id == city_id, UsedCity.game_session_id == game_session_id
+        )
         res = await self.database.execute_query(query)
         double_city = res.scalar_one_or_none()
 
@@ -138,10 +152,15 @@ class WGAccessor:
         await self.database.execute_query(query)
         return
 
-    async def update_team(self, game_session_id: int, user_id: int, point: int = 0, round_: int = 0) -> None:
+    async def update_team(
+        self, game_session_id: int, user_id: int, point: int = 0, round_: int = 0
+    ) -> None:
         query = (
             update(UserGameSession)
-            .where(UserGameSession.game_sessions_id == game_session_id, UserGameSession.player_id == user_id)
+            .where(
+                UserGameSession.game_sessions_id == game_session_id,
+                UserGameSession.player_id == user_id,
+            )
             .values(
                 point=UserGameSession.point + point,
                 round_=UserGameSession.round_ + round_,
@@ -166,7 +185,9 @@ class WGAccessor:
     async def remove_life_from_player(self, game_id: int, player_id: int) -> None:
         query = (
             update(UserGameSession)
-            .where(UserGameSession.game_sessions_id == game_id, UserGameSession.player_id == player_id)
+            .where(
+                UserGameSession.game_sessions_id == game_id, UserGameSession.player_id == player_id
+            )
             .values(life=UserGameSession.life - 1)
         )
         await self.database.execute_query(query)

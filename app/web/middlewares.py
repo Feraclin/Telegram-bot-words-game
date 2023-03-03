@@ -41,22 +41,22 @@ async def error_handling_middleware(request: "Request", handler):
         match e:
             case web_exceptions.HTTPUnprocessableEntity():
                 return error_json_response(
-                        http_status=400,
-                        status="bad_request",
-                        message=e.reason,
-                        data=json.loads(e.text),
-                    )
+                    http_status=400,
+                    status="bad_request",
+                    message=e.reason,
+                    data=json.loads(e.text),
+                )
             case web_exceptions.HTTPException():
                 return error_json_response(
-                        http_status=e.status,
-                        status=HTTP_ERROR_CODES[e.status],
-                        message=str(e),
-                    )
+                    http_status=e.status,
+                    status=HTTP_ERROR_CODES[e.status],
+                    message=str(e),
+                )
             case _:
                 request.app.logger.error("Exception", exc_info=e)
                 return error_json_response(
-                        http_status=500, status="internal server error", message=str(e)
-                    )
+                    http_status=500, status="internal server error", message=str(e)
+                )
 
 
 def setup_middlewares(app: "Application"):

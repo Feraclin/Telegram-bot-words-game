@@ -1,7 +1,6 @@
 import asyncio
 import os
 
-from aiohttp.web import run_app
 from aiohttp.web_runner import AppRunner, TCPSite
 
 from app.worker_app.worker import Worker
@@ -38,6 +37,3 @@ if __name__ == "__main__":
         for t in (tasks_ := asyncio.all_tasks(loop)):
             t.cancel()
         loop.run_until_complete(asyncio.gather(*tasks_, return_exceptions=True))
-
-
-run_app()

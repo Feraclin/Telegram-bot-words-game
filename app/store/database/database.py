@@ -46,7 +46,9 @@ class Database:
             )
         self.engine_: AsyncEngine | None = None
         self.db_: DeclarativeBase | None = None
-        self.session: AsyncSession | async_scoped_session | sessionmaker | async_sessionmaker | None = None
+        self.session: AsyncSession | async_scoped_session | sessionmaker | async_sessionmaker | None = (
+            None
+        )
         self.logger = logging.getLogger("database")
 
     async def connect(self, *_: list, **__: dict) -> None:

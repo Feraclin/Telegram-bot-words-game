@@ -15,10 +15,12 @@ class Poller:
         logging.basicConfig(level=logging.INFO)
         self._task: Task | None = None
         self.TgClient = TgClient(token=cfg.tg_token.tg_token)
-        self.rabbitMQ = RabbitMQ(host=cfg.rabbitmq.host,
-                                 port=cfg.rabbitmq.port,
-                                 user=cfg.rabbitmq.user,
-                                 password=cfg.rabbitmq.password)
+        self.rabbitMQ = RabbitMQ(
+            host=cfg.rabbitmq.host,
+            port=cfg.rabbitmq.port,
+            user=cfg.rabbitmq.user,
+            password=cfg.rabbitmq.password,
+        )
 
     async def _poll(self):
         offset = 0
@@ -43,7 +45,6 @@ class Poller:
 
 
 if __name__ == "__main__":
-
     poller = Poller(cfg=config)
 
     loop = asyncio.new_event_loop()
