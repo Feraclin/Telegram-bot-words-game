@@ -1,14 +1,21 @@
+import os
 import typing
 from dataclasses import dataclass
-from dotenv import dotenv_values, find_dotenv
+from pathlib import Path
 
-import yaml
+from dotenv import load_dotenv
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
 
-found_dotenv = find_dotenv(filename='.env')
-config_env = dotenv_values(found_dotenv)
+env_name = '.env'
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+dotenv_file = os.path.join(BASE_DIR, env_name)
+if os.path.isfile(dotenv_file):
+    load_dotenv(dotenv_file)
+config_env = os.environ
 
 
 @dataclass
@@ -30,12 +37,17 @@ class BotConfig:
 
 
 @dataclass
+class TgConfig:
+    tg_token: str
+
+
+@dataclass
 class DatabaseConfig:
-    host: str = "localhost"
-    port: int = 5432
-    user: str = "postgres"
-    password: str = "postgres"
-    database: str = "project"
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str
 
 
 @dataclass
@@ -43,13 +55,12 @@ class RabbitMQ:
     user: str
     password: str
     host: str
-    port: int
+    port: str
 
 
 @dataclass
 class YandexDictConfig:
     token: str
-
 
 
 @dataclass
@@ -62,31 +73,47 @@ class Config:
     yandex_dict: YandexDictConfig = None
 
 
-def setup_config(app: "Application", config_path: str):
-    with open(config_path, "r") as f:
-        raw_config = yaml.safe_load(f)
+def setup_config(app: "Application"):
 
-    app.config = Config(
-        session=SessionConfig(
-            key=raw_config["session"]["key"],
-        ),
-        admin=AdminConfig(
-            email=raw_config["admin"]["email"],
-            password=raw_config["admin"]["password"],
-        ),
-        bot=BotConfig(
-            token=raw_config["bot"]["token"],
-            group_id=raw_config["bot"]["group_id"],
-            tg_token=config_env['BOT_TOKEN_TG']
-        ),
-        database=DatabaseConfig(**raw_config["database"]),
-        rabbitmq=RabbitMQ(
-            host=raw_config["rabbitmq"]["host"],
-            port=raw_config["rabbitmq"]["port"],
-            user=raw_config["rabbitmq"]["user"],
-            password=raw_config["rabbitmq"]["password"],
-        ),
-        yandex_dict=YandexDictConfig(
-            token=config_env['YANDEX_DICT_TOKEN'],
-        ),
-    )
+    app.config = config
+
+
+@dataclass
+class ConfigEnv:
+    admin: AdminConfig
+    session: SessionConfig = None
+    database: DatabaseConfig = None
+    rabbitmq: RabbitMQ = None
+    yandex_dict: YandexDictConfig = None
+    tg_token: TgConfig = None
+
+
+config = ConfigEnv(
+    admin=AdminConfig(
+        email=config_env.get('EMAIL'),
+        password=config_env.get('PASSWORD')
+    ),
+    session=SessionConfig(
+        key=config_env.get("SESSION_KEY")
+    ),
+    database=DatabaseConfig(
+        host=config_env.get("POSTGRES_DEFAULT_HOST"),
+        port=int(config_env.get("POSTGRES_DEFAULT_PORT")),
+        user=config_env.get("POSTGRES_DEFAULT_USER"),
+        password=config_env.get("POSTGRES_DEFAULT_PASS"),
+        database=config_env.get("POSTGRES_DEFAULT_DB"),
+    ),
+    rabbitmq=RabbitMQ(
+        host=config_env.get("RABBITMQ_DEFAULT_HOST"),
+        port=config_env.get("RABBITMQ_DEFAULT_PORT"),
+        user=config_env.get("RABBITMQ_DEFAULT_USER"),
+        password=config_env.get("RABBITMQ_DEFAULT_PASS"),
+    ),
+    yandex_dict=YandexDictConfig(
+        token=config_env['YANDEX_DICT_TOKEN'],
+    ),
+    tg_token=TgConfig(tg_token=config_env['BOT_TOKEN_TG'])
+)
+
+
+print(config)

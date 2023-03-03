@@ -93,7 +93,7 @@ class TestQuestionsStore:
 class TestQuestionAddView:
     async def test_success(self, authed_cli, theme_1: Theme):
         resp = await authed_cli.post(
-            "/quiz.add_question",
+            "/quiz_accessor.add_question",
             json={
                 "title": "How many legs does an octopus have?",
                 "theme_id": theme_1.id,
@@ -127,7 +127,7 @@ class TestQuestionAddView:
 
     async def test_unauthorized(self, cli):
         resp = await cli.post(
-            "/quiz.add_question",
+            "/quiz_accessor.add_question",
             json={
                 "title": "How many legs does an octopus have?",
                 "theme_id": 1,
@@ -149,7 +149,7 @@ class TestQuestionAddView:
 
     async def test_theme_not_found(self, authed_cli):
         resp = await authed_cli.post(
-            "/quiz.add_question",
+            "/quiz_accessor.add_question",
             json={
                 "title": "How many legs does an octopus have?",
                 "theme_id": 1,
@@ -169,7 +169,7 @@ class TestQuestionAddView:
 
     async def test_all_answers_are_correct(self, authed_cli, theme_1):
         resp = await authed_cli.post(
-            "/quiz.add_question",
+            "/quiz_accessor.add_question",
             json={
                 "title": "How many legs does an octopus have?",
                 "theme_id": theme_1.id,
@@ -189,7 +189,7 @@ class TestQuestionAddView:
 
     async def test_all_answers_are_incorrect(self, authed_cli, theme_1):
         resp = await authed_cli.post(
-            "/quiz.add_question",
+            "/quiz_accessor.add_question",
             json={
                 "title": "How many legs does an octopus have?",
                 "theme_id": theme_1.id,
@@ -209,7 +209,7 @@ class TestQuestionAddView:
 
     async def test_only_one_answer(self, authed_cli, theme_1):
         resp = await authed_cli.post(
-            "/quiz.add_question",
+            "/quiz_accessor.add_question",
             json={
                 "title": "How many legs does an octopus have?",
                 "theme_id": theme_1.id,
@@ -228,19 +228,19 @@ class TestQuestionAddView:
 
 class TestQuestionListView:
     async def test_unauthorized(self, cli):
-        resp = await cli.get("/quiz.list_questions")
+        resp = await cli.get("/quiz_accessor.list_questions")
         assert resp.status == 401
         data = await resp.json()
         assert data["status"] == "unauthorized"
 
     async def test_empty(self, authed_cli):
-        resp = await authed_cli.get("/quiz.list_questions")
+        resp = await authed_cli.get("/quiz_accessor.list_questions")
         assert resp.status == 200
         data = await resp.json()
         assert data == ok_response(data={"questions": []})
 
     async def test_one_question(self, authed_cli, question_1):
-        resp = await authed_cli.get("/quiz.list_questions")
+        resp = await authed_cli.get("/quiz_accessor.list_questions")
         assert resp.status == 200
         data = await resp.json()
         assert data == ok_response(data={"questions": [question2dict(question_1)]})
@@ -248,7 +248,7 @@ class TestQuestionListView:
     async def test_several_questions(
         self, authed_cli, question_1: Question, question_2
     ):
-        resp = await authed_cli.get("/quiz.list_questions")
+        resp = await authed_cli.get("/quiz_accessor.list_questions")
         assert resp.status == 200
         data = await resp.json()
         assert data == ok_response(

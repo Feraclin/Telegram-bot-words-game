@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from marshmallow import Schema, fields, pre_load, post_load
+from marshmallow import Schema, fields, pre_load
 
 
 class AdminSchema(Schema):

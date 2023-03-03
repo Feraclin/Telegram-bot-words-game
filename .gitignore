@@ -129,5 +129,9 @@ dmypy.json
 .pyre/
 
 # IDE
-.idea!/.env_dev
+
+.idea
+
+# Temporary Trash
+.temp!/.env_dev
 !/.env_dev

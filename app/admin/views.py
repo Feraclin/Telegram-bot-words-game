@@ -2,7 +2,7 @@ from aiohttp.web import HTTPForbidden
 from aiohttp_apispec import request_schema, response_schema, docs
 from aiohttp_session import new_session
 
-from app.admin.schemes import AdminSchema
+from app.admin.schemes import AdminSchema, AdminResponseScheme
 from app.web.app import View
 from app.web.mixins import AuthRequiredMixin
 from app.web.utils import json_response
@@ -11,7 +11,7 @@ from app.web.utils import json_response
 class AdminLoginView(View):
     @docs(tags=["admin"], summary="Login Admin", description="Logged as admin")
     @request_schema(AdminSchema)
-    @response_schema(AdminSchema, 200)
+    @response_schema(AdminResponseScheme, 200)
     async def post(self):
 
         email, password = self.data["email"], self.data["password"]
@@ -27,12 +27,12 @@ class AdminLoginView(View):
         session["admin"] = AdminSchema().dump(admin)
         self.request.app.logger.info("admin login successful")
 
-        return json_response(data=AdminSchema().dump(admin))
+        return json_response(data=AdminResponseScheme().dump(admin))
 
 
 class AdminCurrentView(AuthRequiredMixin, View):
     @docs(tags=["admin"], summary="Current Admin", description="id and email of current admin")
-    @response_schema(AdminSchema, 200)
+    @response_schema(AdminResponseScheme, 200)
     async def get(self):
         self.request.app.logger.info("check current admin successful")
-        return json_response(data=AdminSchema().dump(self.request.admin))
+        return json_response(data=AdminResponseScheme().dump(self.request.admin))

@@ -51,7 +51,7 @@ def db_session(server):
     return server.database.session
 
 
-@pytest.fixture(autouse=True, scope="function")
+@pytest.fixture(autouse=False, scope="function")
 async def clear_db(server):
     yield
     try:
@@ -59,7 +59,7 @@ async def clear_db(server):
         connection = session.connection()
         for table in server.database.db_.metadata.tables:
             await session.execute(text(f"TRUNCATE {table} CASCADE"))
-            # await session.execute(text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1"))
+            await session.execute(text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1"))
 
         await session.commit()
         connection.close()
