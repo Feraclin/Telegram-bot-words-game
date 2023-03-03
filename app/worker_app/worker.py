@@ -254,11 +254,13 @@ class Worker:
             "resize_keyboard": True,
             "one_time_keyboard": True,
         }
-        await self.words_game.create_game_session(
-            user_id=upd.message.from_.id,
-            chat_id=upd.message.chat.id,
-            chat_type=upd.message.chat.type,
-        )
+        async with asyncio.Lock():
+            await self.words_game.create_game_session(
+                user_id=upd.message.from_.id,
+                chat_id=upd.message.chat.id,
+                chat_type=upd.message.chat.type,
+            )
+
         inline_message = await self.tg_client.send_keyboard(
             upd.message.chat.id, text=f"Будешь играть?", keyboard=keyboard
         )
