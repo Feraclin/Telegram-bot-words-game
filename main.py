@@ -8,8 +8,7 @@ from app.poller_app.poller import Poller
 from app.web.config import config
 from app.web.app import setup_app as aiohttp_app
 
-app = aiohttp_app(config_path=os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), ".temp/config.yml"))
+app = aiohttp_app()
 
 
 if __name__ == "__main__":
@@ -19,7 +18,7 @@ if __name__ == "__main__":
 
     async def start_runner(run: AppRunner) -> None:
         await run.setup()
-        site = TCPSite(run, "localhost", 8080)
+        site = TCPSite(run, "localhost", 8090)
         await site.start()
 
     loop = asyncio.new_event_loop()

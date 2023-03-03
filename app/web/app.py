@@ -55,9 +55,9 @@ class View(AiohttpView):
 app = Application(debug=True)
 
 
-def setup_app(config_path: str) -> Application:
+def setup_app() -> Application:
     setup_logging(app)
-    setup_config(app, config_path)
+    setup_config(app)
     session_setup(app, EncryptedCookieStorage(app.config.session.key))
     setup_routes(app)
     setup_aiohttp_apispec(app, title="TG Words Bot", url="/docs/json", swagger_path="/docs")
