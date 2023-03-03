@@ -1,7 +1,7 @@
 import asyncio
 import os
+import signal
 
-from aiohttp.web import run_app
 from aiohttp.web_runner import AppRunner, TCPSite
 
 from app.worker_app.worker import Worker
@@ -9,8 +9,8 @@ from app.poller_app.poller import Poller
 from app.web.config import config
 from app.web.app import setup_app as aiohttp_app
 
-app = aiohttp_app(config_path=os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), ".temp/config.yml"))
+
+app = aiohttp_app()
 
 
 if __name__ == "__main__":
@@ -20,10 +20,21 @@ if __name__ == "__main__":
 
     async def start_runner(run: AppRunner) -> None:
         await run.setup()
-        site = TCPSite(run, "localhost", 8080)
+        site = TCPSite(run, port=8080)
         await site.start()
 
+
+    async def handle_sigterm(*args):
+        raise KeyboardInterrupt()
+
+
     loop = asyncio.new_event_loop()
+
+    signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+    for s in signals:
+        loop.add_signal_handler(
+            s, lambda: asyncio.create_task(handle_sigterm()))
+
     try:
         loop.create_task(poller.start())
         loop.create_task(worker.start())
@@ -38,6 +49,3 @@ if __name__ == "__main__":
         for t in (tasks_ := asyncio.all_tasks(loop)):
             t.cancel()
         loop.run_until_complete(asyncio.gather(*tasks_, return_exceptions=True))
-
-
-run_app()
