@@ -14,5 +14,9 @@ database:
 bot:
   token: group_token
   group_id: 1
-
+rabbitmq:
+  host: localhost
+  port: 5673
+  user: admin
+  password: password
 

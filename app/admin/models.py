@@ -1,23 +1,25 @@
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, Union
 
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.store.database.sqlalchemy_base import DB
+if TYPE_CHECKING:
+    from aiohttp_session import Session
 
 
 @dataclass
 class Admin:
     id: int
     email: str
-    password: Optional[str] = None
+    password: str | None = None
 
     def is_password_valid(self, password: str):
         return self.password == sha256(password.encode()).hexdigest()
 
     @classmethod
-    def from_session(cls, session: Optional[dict]) -> Optional["Admin"]:
+    def from_session(cls, session: Union["Session", dict]) -> Optional["Admin"]:
         return cls(id=session["admin"]["id"], email=session["admin"]["email"])
 
     def check_password(self, password) -> bool:

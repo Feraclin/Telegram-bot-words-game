@@ -12,6 +12,7 @@ from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from app.admin.models import Admin
 from app.store import Store, setup_store
 from app.store.database.database import Database
+from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 from app.web.config import Config, setup_config
 from app.web.logger import setup_logging
 from app.web.middlewares import setup_middlewares
@@ -22,6 +23,7 @@ class Application(AiohttpApplication):
     config: Optional[Config] = None
     store: Optional[Store] = None
     database: Optional[Database] = None
+    rabbitMQ: Optional[RabbitMQ] = None
 
 
 class Request(AiohttpRequest):
@@ -50,7 +52,7 @@ class View(AiohttpView):
         return self.request.get("data", {})
 
 
-app = Application()
+app = Application(debug=True)
 
 
 def setup_app(config_path: str) -> Application:

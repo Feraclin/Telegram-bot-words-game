@@ -21,6 +21,19 @@ services:
     networks:
       - kts_st_week3
 
+
+  rabbitmq:
+    image: heidiks/rabbitmq-delayed-message-exchange:latest
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    networks:
+      - kts_st_week3
+
 volumes:
   pgdata:
 
