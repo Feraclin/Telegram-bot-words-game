@@ -11,13 +11,11 @@ if typing.TYPE_CHECKING:
 env_name = '.env'
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-print(BASE_DIR)
 
 dotenv_file = os.path.join(BASE_DIR, env_name)
 if os.path.isfile(dotenv_file):
     load_dotenv(dotenv_file)
 config_env = os.environ
-print(config_env)
 
 
 @dataclass

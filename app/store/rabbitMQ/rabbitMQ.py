@@ -60,7 +60,6 @@ class RabbitMQ:
 
         self.connection_ = connection
         self.exchange = auth_exchange
-        # self.listener = asyncio.create_task(self.listen_events())
         logger.info(f"action=setup_rabbitmq, status=success")
 
     async def disconnect(self, *_: list, **__: dict) -> None:

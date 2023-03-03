@@ -22,7 +22,7 @@ class WGAccessor:
         self, user_id: int | None = None, chat_id: int | None = None
     ) -> GameSession | None:
         if user_id:
-            query = select(GameSession).where(GameSession.user_id == user_id, GameSession.is_active == True)
+            query = select(GameSession).where(GameSession.creator_id == user_id, GameSession.is_active == True)
         elif chat_id:
             query = select(GameSession).where(GameSession.chat_id == chat_id, GameSession.is_active == True)
         else:
