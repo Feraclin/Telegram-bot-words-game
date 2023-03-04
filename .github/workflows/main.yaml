@@ -20,7 +20,7 @@ jobs:
                 mkdir -p /home/tg_bot
                 cd /home/tg_bot
                 git init
-                git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/bot_cgk.git
+                git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/{{ github.event.repository.name }}.git
                 docker-compose down
                 docker-compose build
                 docker-compose up -d --force-recreate
