@@ -87,7 +87,7 @@ class RabbitMQ:
     async def listen_events(self, routing_key: str = "tg_bot", on_message_func=None) -> None:
         try:
             channel = await self.connection_.channel()
-            await channel.set_qos(prefetch_count=100)
+            await channel.set_qos(prefetch_count=10)
 
             auth_exchange = await channel.declare_exchange(
                 name="auth-delayed",

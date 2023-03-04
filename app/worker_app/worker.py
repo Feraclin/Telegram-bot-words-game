@@ -5,6 +5,8 @@ from random import choice
 
 import bson
 from sqlalchemy.exc import IntegrityError
+
+from app.store.rabbitMQ.schemes import MessageRabbitMQ
 from app.worker_app.constant import help_msg
 from app.store.tg_api.client import TgClient
 from app.store.tg_api.schemes import UpdateObj, SendMessageResponse
@@ -45,6 +47,13 @@ class Worker:
         if upd.message:
             try:
                 match upd.message.text:
+                    case "/test_delay":
+                        message = {"type_": "test_delay",
+                                   "user_id": upd.message.from_.id,
+                                   "chat_id": upd.message.chat.id,
+                                   "text": "я приду через 10 секунд"}
+                        await self.rabbitMQ.send_event(message=message, delay=10000, routing_key="tg_bot_sender")
+                        print("delay ушел")
                     case "/play":
                         keyboard = {
                             "keyboard": [[{"text": "/yes"}, {"text": "/no"}]],
@@ -149,7 +158,6 @@ class Worker:
 
     async def on_message(self, message):
         upd = UpdateObj.Schema().load(bson.loads(message.body))
-        # print("worker.rabbit is: %r" % upd)
         await self.handle_update(upd)
 
     async def start(self):

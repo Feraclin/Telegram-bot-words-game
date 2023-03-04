@@ -1,8 +1,8 @@
 import asyncio
-import os
 
 from aiohttp.web_runner import AppRunner, TCPSite
 
+from app.sender.sender import Sender
 from app.worker_app.worker import Worker
 from app.poller_app.poller import Poller
 from app.web.config import config
@@ -15,6 +15,7 @@ if __name__ == "__main__":
     runner = AppRunner(app)
     poller = Poller(cfg=config)
     worker = Worker(cfg=config)
+    sender = Sender(cfg=config)
 
     async def start_runner(run: AppRunner) -> None:
         await run.setup()
@@ -25,6 +26,7 @@ if __name__ == "__main__":
     try:
         loop.create_task(poller.start())
         loop.create_task(worker.start())
+        loop.create_task(sender.start())
         loop.create_task(start_runner(runner))
         loop.run_forever()
     except KeyboardInterrupt:
@@ -32,6 +34,7 @@ if __name__ == "__main__":
     finally:
         loop.create_task(poller.stop())
         loop.create_task(worker.stop())
+        loop.create_task(sender.stop())
         loop.create_task(runner.cleanup())
         for t in (tasks_ := asyncio.all_tasks(loop)):
             t.cancel()
