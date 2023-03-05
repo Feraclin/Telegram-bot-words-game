@@ -45,7 +45,9 @@ class Sender:
     async def start(self):
         await self.database.connect()
         await self.rabbitMQ.connect()
-        self._tasks = [asyncio.create_task(self._worker_rabbit()) for _ in range(self.concurrent_workers)]
+        self._tasks = [
+            asyncio.create_task(self._worker_rabbit()) for _ in range(self.concurrent_workers)
+        ]
 
     async def stop(self):
         for task_ in self._tasks:
@@ -54,9 +56,11 @@ class Sender:
         await self.database.disconnect()
 
     async def _worker_rabbit(self):
-        await self.rabbitMQ.listen_events(on_message_func=self.on_message,
-                                          queue_name=self.queue_name,
-                                          routing_key=[self.routing_key_sender])
+        await self.rabbitMQ.listen_events(
+            on_message_func=self.on_message,
+            queue_name=self.queue_name,
+            routing_key=[self.routing_key_sender],
+        )
 
     async def handle_update(self, upd: dict):
         match upd.get("type_"):
@@ -64,7 +68,8 @@ class Sender:
                 await self.tg_client.send_message(
                     chat_id=upd["chat_id"],
                     text=upd["text"],
-                    force_reply=upd.get("force_reply", False))
+                    force_reply=upd.get("force_reply", False),
+                )
             case "message_keyboard":
                 keyboard = await self.tg_client.send_keyboard(
                     chat_id=upd["chat_id"],
@@ -73,9 +78,11 @@ class Sender:
                 if upd.get("live_time", None):
                     upd["keyboard_message_id"] = keyboard.result.message_id
                     upd["type_"] = "message_inline_remove_keyboard"
-                    await self.rabbitMQ.send_event(message=upd,
-                                                   routing_key=self.routing_key_sender,
-                                                   delay=upd["live_time"]*1000)
+                    await self.rabbitMQ.send_event(
+                        message=upd,
+                        routing_key=self.routing_key_sender,
+                        delay=upd["live_time"] * 1000,
+                    )
             case "message_inline_remove_keyboard":
                 await self.tg_client.remove_inline_keyboard(
                     chat_id=upd["chat_id"],
@@ -96,7 +103,8 @@ class Sender:
                     question=upd["question"],
                     options=upd["options"],
                     anonymous=upd["anonymous"],
-                    period=10)
+                    period=10,
+                )
                 await self.words_game.update_game_session(game_id=upd["game_id"], poll_id=poll.result.poll.id)
                 upd["type_"] = "send_poll_answer"
                 upd["poll_message_id"] = poll.result.message_id
@@ -112,7 +120,9 @@ class Sender:
     async def check_poll(self, upd: dict):
         game = await self.words_game.get_game_session_by_poll_id(poll_id=upd["poll_id"])
         poll = await self.tg_client.remove_inline_keyboard(
-            chat_id=upd["chat_id"], message_id=upd["poll_message_id"],)
+            chat_id=upd["chat_id"],
+            message_id=upd["poll_message_id"],
+        )
         if not game:
             return
         word = poll.result.poll.question.split()[4]
@@ -135,11 +145,13 @@ class Sender:
                 chat_id=game.chat_id,
                 text=f"{word} - нет такого слова"
             )
-        message_poll_result = {"type_": "poll_result",
-                               "chat_id": upd["chat_id"],
-                               "poll_id": upd["poll_id"],
-                               "poll_result": res_poll,
-                               "word": word}
+        message_poll_result = {
+            "type_": "poll_result",
+            "chat_id": upd["chat_id"],
+            "poll_id": upd["poll_id"],
+            "poll_result": res_poll,
+            "word": word,
+        }
 
         await self.rabbitMQ.send_event(message=message_poll_result,
                                        routing_key=self.routing_key_worker)

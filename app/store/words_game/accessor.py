@@ -6,7 +6,15 @@ from sqlalchemy import select, insert, update, func, delete
 from sqlalchemy.dialects.postgresql import insert as psg_insert
 from sqlalchemy.exc import IntegrityError
 
-from app.words_game.models import GameSession, User, City, UsedCity, UserGameSession, Words, WordsInGame
+from app.words_game.models import (
+    GameSession,
+    User,
+    City,
+    UsedCity,
+    UserGameSession,
+    Words,
+    WordsInGame,
+)
 from random import choice, randint
 
 if TYPE_CHECKING:

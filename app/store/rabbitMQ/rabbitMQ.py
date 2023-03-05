@@ -105,8 +105,7 @@ class RabbitMQ:
             for key in routing_key:
                 await queue.bind(auth_exchange, routing_key=key)
 
-            await queue.consume(
-                on_message_func if on_message_func else self.on_message)
+            await queue.consume(on_message_func if on_message_func else self.on_message)
 
             self.logger.info(" [*] Waiting for messages. To exit press CTRL+C")
             await asyncio.Future()

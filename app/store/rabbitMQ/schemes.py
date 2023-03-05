@@ -1,4 +1,3 @@
-
 from typing import ClassVar, Type
 
 from marshmallow_dataclass import dataclass

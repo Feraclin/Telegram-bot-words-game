@@ -45,7 +45,9 @@ class UserGameSession(MappedAsDataclass, DB):
         ForeignKey("game_sessions.id", ondelete="CASCADE")
     )
     player_id: Mapped[bigint] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    game_session: Mapped[GameSession] = relationship(GameSession, backref="user_game_sessions", lazy="joined")
+    game_session: Mapped[GameSession] = relationship(
+        GameSession, backref="user_game_sessions", lazy="joined"
+    )
     player: Mapped[User] = relationship(User, backref="user_game_sessions", lazy="joined")
     life: Mapped[int] = mapped_column(default=3)
     round_: Mapped[int] = mapped_column(nullable=True, default=0)
