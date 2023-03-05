@@ -236,9 +236,7 @@ class WGAccessor:
             self.logger.error("Word already used")
             word_id = None
         if word_id is None:
-            print(word)
             word_id = await self.get_word_by_word(word)
-            print(word_id)
         query = insert(WordsInGame).values(word_id=word_id.id, game_session_id=game_session_id)
         await self.database.execute_query(query)
 
@@ -246,5 +244,4 @@ class WGAccessor:
         query = select(UserGameSession).where(UserGameSession.game_sessions_id == game_session_id)
         res = await self.database.execute_query(query)
         players = [(player.player.username, player.point) for player in res.scalars().all()]
-        print(players)
         return players
