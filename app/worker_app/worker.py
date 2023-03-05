@@ -155,6 +155,13 @@ class Worker:
                                               word=text["word"])
                     else:
                         await self.pick_leader(game=game)
+                case "slow_player":
+                    game = await self.words_game.select_active_session_by_id(text["chat_id"])
+                    if game.next_user_id == text["user_id"]:
+                        await self.words_game.remove_life_from_player(game_id=game.id,
+                                                                      player_id=text["user_id"],
+                                                                      round_=1)
+                        await self.pick_leader(game=game)
                 case _:
                     self.logger.info(f"unknown type {text['type_']}")
         await message.ack()
@@ -420,6 +427,14 @@ class Worker:
         await self.rabbitMQ.send_event(
             message=message_say_word, routing_key=self.routing_key_sender
         )
+
+        message_slow_player = {"type_": "slow_player",
+                               "chat_id": game.chat_id,
+                               "user_id": player.id}
+
+        await self.rabbitMQ.send_event(message=message_slow_player,
+                                       routing_key=self.routing_key_worker,
+                                       delay=10000)
 
     async def check_word(self, upd: UpdateObj) -> None:
         word = upd.message.text.strip("/").capitalize()
