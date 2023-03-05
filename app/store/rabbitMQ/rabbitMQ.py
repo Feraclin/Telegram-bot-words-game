@@ -113,5 +113,4 @@ class RabbitMQ:
             pass
 
     async def on_message(self, message):
-        print("message received")
         self.logger.info("Message body is: %r" % bson.loads(message.body))
