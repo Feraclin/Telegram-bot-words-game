@@ -30,7 +30,6 @@ class Poller:
             for u in res.result:
                 offset = u.update_id + 1
                 upd = UpdateObj.Schema().dump(u)
-                print(upd)
                 await self.rabbitMQ.send_event(message=upd, routing_key="poller")
                 await asyncio.sleep(get_update_timeout)
 
