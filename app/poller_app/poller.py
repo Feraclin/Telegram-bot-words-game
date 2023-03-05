@@ -25,13 +25,13 @@ class Poller:
     async def _poll(self):
         offset = 0
         while True:
-            print("poller")
+            self.logger.info("Polling...")
             res = await self.TgClient.get_updates_in_objects(offset=offset, timeout=20)
             for u in res.result:
                 offset = u.update_id + 1
                 upd = UpdateObj.Schema().dump(u)
-                self.logger.info(u)
-                await self.rabbitMQ.send_event(message=upd)
+                print(upd)
+                await self.rabbitMQ.send_event(message=upd, routing_key="poller")
                 await asyncio.sleep(get_update_timeout)
 
     async def start(self):

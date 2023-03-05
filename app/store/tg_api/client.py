@@ -84,7 +84,7 @@ class TgClient:
         self,
         chat_id: int,
         question: str,
-        answers: list[str],
+        options: list[str],
         anonymous: bool = False,
         period: int = 15,
     ) -> SendMessageResponse:
@@ -92,7 +92,7 @@ class TgClient:
         payload = {
             "chat_id": chat_id,
             "question": question,
-            "options": answers,
+            "options": options,
             "is_anonymous": anonymous,
             "open_period": period,
             "reply_markup": {

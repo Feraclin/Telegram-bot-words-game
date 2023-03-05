@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select, insert, update, func, delete
 from sqlalchemy.dialects.postgresql import insert as psg_insert
+from sqlalchemy.exc import IntegrityError
 
-
-from app.words_game.models import GameSession, User, City, UsedCity, UserGameSession
+from app.words_game.models import GameSession, User, City, UsedCity, UserGameSession, Words, WordsInGame
 from random import choice, randint
 
 if TYPE_CHECKING:
@@ -142,9 +142,16 @@ class WGAccessor:
         return True if double_city else False
 
     async def set_city_to_used(self, city_id: int, game_session_id: int) -> None:
-        queue = insert(UsedCity).values(city_id=city_id, game_session_id=game_session_id)
-        await self.database.execute_query(queue)
+        query = insert(UsedCity).values(city_id=city_id, game_session_id=game_session_id)
+        await self.database.execute_query(query)
         return
+
+    async def get_city_list_by_session_id(self, game_session_id: int) -> list[City]:
+        query = select(UsedCity).where(UsedCity.game_session_id == game_session_id)
+
+        res = await self.database.execute_query(query)
+        cities = res.scalars().all()
+        return [city.city for city in cities]
 
     async def add_user_to_team(self, user_id: int, game_id: int) -> None:
         query = psg_insert(UserGameSession).values(player_id=user_id, game_sessions_id=game_id)
@@ -182,13 +189,13 @@ class WGAccessor:
         team_lst = res.scalars().all()
         return team_lst
 
-    async def remove_life_from_player(self, game_id: int, player_id: int) -> None:
+    async def remove_life_from_player(self, game_id: int, player_id: int, round_: int = 0) -> None:
         query = (
             update(UserGameSession)
             .where(
                 UserGameSession.game_sessions_id == game_id, UserGameSession.player_id == player_id
             )
-            .values(life=UserGameSession.life - 1)
+            .values(life=UserGameSession.life - 1, round_=UserGameSession.round_ + round_)
         )
         await self.database.execute_query(query)
 
@@ -196,3 +203,40 @@ class WGAccessor:
         query = select(GameSession).where(GameSession.current_poll_id == poll_id)
         res = await self.database.execute_query(query)
         return res.scalar_one_or_none()
+
+    async def get_list_words_by_game_id(self, game_session_id: int) -> list[str]:
+        query = select(WordsInGame).where(WordsInGame.game_session_id == game_session_id)
+        res = await self.database.execute_query(query)
+        words_lst = res.scalars().all()
+        return [word.word.word for word in words_lst]
+
+    async def add_word(self, word: str) -> None:
+        query = psg_insert(Words).values(word=word.capitalize()).returning(Words)
+        query.on_conflict_do_nothing()
+        res = await self.database.execute_query(query)
+        return res.scalar_one_or_none()
+
+    async def get_word_by_word(self, word: str) -> Words | None:
+        query = select(Words).where(Words.word == word.capitalize())
+        res = await self.database.execute_query(query)
+        return res.scalar()
+
+    async def add_used_word(self, game_session_id: int, word: str) -> None:
+        try:
+            word_id = await self.add_word(word)
+        except IntegrityError:
+            self.logger.error("Word already used")
+            word_id = None
+        if word_id is None:
+            print(word)
+            word_id = await self.get_word_by_word(word)
+            print(word_id)
+        query = insert(WordsInGame).values(word_id=word_id.id, game_session_id=game_session_id)
+        await self.database.execute_query(query)
+
+    async def get_player_list(self, game_session_id: int) -> list:
+        query = select(UserGameSession).where(UserGameSession.game_sessions_id == game_session_id)
+        res = await self.database.execute_query(query)
+        players = [(player.player.username, player.point) for player in res.scalars().all()]
+        print(players)
+        return players
