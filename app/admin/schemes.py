@@ -10,7 +10,7 @@ class AdminSchema(Schema):
 
     @pre_load
     def hash_password(self, data: dict, **kwargs) -> dict:
-        data['password'] = sha256(data['password'].encode()).hexdigest()
+        data["password"] = sha256(data["password"].encode()).hexdigest()
         return data
 
 

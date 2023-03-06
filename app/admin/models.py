@@ -5,6 +5,7 @@ from typing import Optional, TYPE_CHECKING, Union
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.store.database.sqlalchemy_base import DB
+
 if TYPE_CHECKING:
     from aiohttp_session import Session
 
@@ -34,6 +35,4 @@ class AdminModel(DB):
     password: Mapped[str] = mapped_column(nullable=False)
 
     def to_dc(self) -> Admin:
-        return Admin(id=self.id,
-                     email=self.email,
-                     password=self.password)
+        return Admin(id=self.id, email=self.email, password=self.password)

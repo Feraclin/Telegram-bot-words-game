@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 if typing.TYPE_CHECKING:
     from app.web.app import Application
 
-env_name = '.env'
+env_name = ".env"
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -74,7 +74,6 @@ class Config:
 
 
 def setup_config(app: "Application"):
-
     app.config = config
 
 
@@ -89,13 +88,8 @@ class ConfigEnv:
 
 
 config = ConfigEnv(
-    admin=AdminConfig(
-        email=config_env.get('EMAIL'),
-        password=config_env.get('PASSWORD')
-    ),
-    session=SessionConfig(
-        key=config_env.get("SESSION_KEY")
-    ),
+    admin=AdminConfig(email=config_env.get("EMAIL"), password=config_env.get("PASSWORD")),
+    session=SessionConfig(key=config_env.get("SESSION_KEY")),
     database=DatabaseConfig(
         host=config_env.get("POSTGRES_DEFAULT_HOST"),
         port=int(config_env.get("POSTGRES_DEFAULT_PORT")),
@@ -110,7 +104,7 @@ config = ConfigEnv(
         password=config_env.get("RABBITMQ_DEFAULT_PASS"),
     ),
     yandex_dict=YandexDictConfig(
-        token=config_env['YANDEX_DICT_TOKEN'],
+        token=config_env["YANDEX_DICT_TOKEN"],
     ),
-    tg_token=TgConfig(tg_token=config_env['BOT_TOKEN_TG'])
+    tg_token=TgConfig(tg_token=config_env["BOT_TOKEN_TG"]),
 )

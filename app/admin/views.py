@@ -13,10 +13,9 @@ class AdminLoginView(View):
     @request_schema(AdminSchema)
     @response_schema(AdminResponseScheme, 200)
     async def post(self):
-
         email, password = self.data["email"], self.data["password"]
         # проверка наличия администратора с данным email и валидность пароля
-        self.request.app.logger.info(f'{email}, {password}')
+        self.request.app.logger.info(f"{email}, {password}")
         admin = await self.request.app.store.admins.get_by_email(email)
 
         if not admin or admin.password != password:
