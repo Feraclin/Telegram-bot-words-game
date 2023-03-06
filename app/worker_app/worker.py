@@ -150,6 +150,7 @@ class Worker:
                     game = await self.words_game.select_active_session_by_id(
                         chat_id=text["chat_id"]
                     )
+                    await self.words_game.update_game_session(game_id=game.id, poll_id=text["poll_id"])
                     if text["poll_result"] == "yes":
                         await self.right_word(game=game,
                                               word=text["word"])

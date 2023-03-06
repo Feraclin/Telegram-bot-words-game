@@ -9,14 +9,12 @@ from app.store.tg_api.client import TgClient
 
 from app.web.config import ConfigEnv, config
 from app.store.words_game.accessor import WGAccessor
-from app.store.database.database import Database
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 
 
 @dataclass
 class Sender:
     tg_client: TgClient = field(init=False)
-    database: Database = field(init=False)
     rabbitMQ: RabbitMQ = field(init=False)
     cfg: ConfigEnv = field(kw_only=True)
     _tasks: list[asyncio.Task] = field(default_factory=list)
@@ -28,7 +26,6 @@ class Sender:
 
     def __post_init__(self):
         self.tg_client = TgClient(token=self.cfg.tg_token.tg_token)
-        self.database = Database(cfg=self.cfg)
         self.words_game = WGAccessor(database=self.database)
         self.rabbitMQ = RabbitMQ(
             host=self.cfg.rabbitmq.host,
@@ -43,7 +40,6 @@ class Sender:
         await message.ack()
 
     async def start(self):
-        await self.database.connect()
         await self.rabbitMQ.connect()
         self._tasks = [
             asyncio.create_task(self._worker_rabbit()) for _ in range(self.concurrent_workers)
@@ -53,7 +49,6 @@ class Sender:
         for task_ in self._tasks:
             task_.cancel()
         await self.rabbitMQ.disconnect()
-        await self.database.disconnect()
 
     async def _worker_rabbit(self):
         await self.rabbitMQ.listen_events(
@@ -105,7 +100,6 @@ class Sender:
                     anonymous=upd["anonymous"],
                     period=10,
                 )
-                await self.words_game.update_game_session(game_id=upd["game_id"], poll_id=poll.result.poll.id)
                 upd["type_"] = "send_poll_answer"
                 upd["poll_message_id"] = poll.result.message_id
                 upd["poll_id"] = poll.result.poll.id
@@ -118,7 +112,6 @@ class Sender:
                 self.logger.error(f"Unknown type: {upd['type_']}")
 
     async def check_poll(self, upd: dict):
-        game = await self.words_game.get_game_session_by_poll_id(poll_id=upd["poll_id"])
         poll = await self.tg_client.remove_inline_keyboard(
             chat_id=upd["chat_id"],
             message_id=upd["poll_message_id"],
