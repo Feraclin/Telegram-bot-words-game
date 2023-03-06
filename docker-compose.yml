@@ -60,6 +60,19 @@ services:
     networks:
       - kts_st_week3
 
+  sender_app:
+    build:
+      context: .
+      dockerfile: ./compose/sender/Dockerfile
+    restart: always
+    env_file:
+      - .env_dev
+    command: bash -c "cd ./app/sender_app && poetry run python sender.py"
+    depends_on:
+      - worker_app_app
+    networks:
+      - kts_st_week3
+
   aiohttp_app:
     build:
       context: .

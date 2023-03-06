@@ -3,7 +3,7 @@ import signal
 
 from aiohttp.web_runner import AppRunner, TCPSite
 
-from app.sender.sender import Sender
+from app.sender_app.sender import Sender
 from app.worker_app.worker import Worker
 from app.poller_app.poller import Poller
 from app.web.config import config

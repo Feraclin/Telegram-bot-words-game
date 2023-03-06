@@ -19,7 +19,7 @@ class Sender:
     _tasks: list[asyncio.Task] = field(default_factory=list)
     concurrent_workers: int = field(kw_only=True, default=1)
     logger: logging.Logger = logging.getLogger("worker")
-    routing_key_sender: str = field(init=False, default="sender")
+    routing_key_sender: str = field(init=False, default="sender_app")
     routing_key_worker: str = field(init=False, default="worker")
     queue_name: str = field(init=False, default="tg_bot_sender")
 
