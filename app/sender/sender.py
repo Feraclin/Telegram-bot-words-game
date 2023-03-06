@@ -8,7 +8,6 @@ import bson
 from app.store.tg_api.client import TgClient
 
 from app.web.config import ConfigEnv, config
-from app.store.words_game.accessor import WGAccessor
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 
 
@@ -26,7 +25,6 @@ class Sender:
 
     def __post_init__(self):
         self.tg_client = TgClient(token=self.cfg.tg_token.tg_token)
-        self.words_game = WGAccessor(database=self.database)
         self.rabbitMQ = RabbitMQ(
             host=self.cfg.rabbitmq.host,
             port=self.cfg.rabbitmq.port,
@@ -100,12 +98,17 @@ class Sender:
                     anonymous=upd["anonymous"],
                     period=10,
                 )
-                upd["type_"] = "send_poll_answer"
                 upd["poll_message_id"] = poll.result.message_id
                 upd["poll_id"] = poll.result.poll.id
-                await self.rabbitMQ.send_event(message=upd,
-                                               routing_key=self.routing_key_sender,
-                                               delay=12000)
+                if not poll.result.poll.is_anonymous:
+                    upd["type_"] = "send_poll_id"
+                    await self.rabbitMQ.send_event(message=upd,
+                                                   routing_key=self.routing_key_worker)
+                else:
+                    upd["type_"] = "send_poll_answer"
+                    await self.rabbitMQ.send_event(message=upd,
+                                                   routing_key=self.routing_key_sender,
+                                                   delay=12000)
             case "send_poll_answer":
                 await self.check_poll(upd)
             case _:
@@ -116,8 +119,6 @@ class Sender:
             chat_id=upd["chat_id"],
             message_id=upd["poll_message_id"],
         )
-        if not game:
-            return
         word = poll.result.poll.question.split()[4]
         answers = poll.result.poll.options
         yes = 0
@@ -135,7 +136,7 @@ class Sender:
             res_poll = "no"
 
             await self.tg_client.send_message(
-                chat_id=game.chat_id,
+                chat_id=upd["chat_id"],
                 text=f"{word} - нет такого слова"
             )
         message_poll_result = {

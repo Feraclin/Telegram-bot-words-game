@@ -163,6 +163,9 @@ class Worker:
                                                                       player_id=text["user_id"],
                                                                       round_=1)
                         await self.pick_leader(game=game)
+                case "send_poll_id":
+                    await self.words_game.update_game_session(game_id=text["game_id"],
+                                                              poll_id=text["poll_id"])
                 case _:
                     self.logger.info(f"unknown type {text['type_']}")
         await message.ack()
