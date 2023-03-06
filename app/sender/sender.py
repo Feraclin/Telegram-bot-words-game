@@ -8,7 +8,6 @@ import bson
 from app.store.tg_api.client import TgClient
 
 from app.web.config import ConfigEnv, config
-from app.store.words_game.accessor import WGAccessor
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 
 
@@ -26,7 +25,6 @@ class Sender:
 
     def __post_init__(self):
         self.tg_client = TgClient(token=self.cfg.tg_token.tg_token)
-        self.words_game = WGAccessor(database=self.database)
         self.rabbitMQ = RabbitMQ(
             host=self.cfg.rabbitmq.host,
             port=self.cfg.rabbitmq.port,
@@ -116,8 +114,6 @@ class Sender:
             chat_id=upd["chat_id"],
             message_id=upd["poll_message_id"],
         )
-        if not game:
-            return
         word = poll.result.poll.question.split()[4]
         answers = poll.result.poll.options
         yes = 0
@@ -135,7 +131,7 @@ class Sender:
             res_poll = "no"
 
             await self.tg_client.send_message(
-                chat_id=game.chat_id,
+                chat_id=upd["chat_id"],
                 text=f"{word} - нет такого слова"
             )
         message_poll_result = {
