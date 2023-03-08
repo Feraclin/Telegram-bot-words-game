@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from dataclasses import dataclass, field
 from .messages import keyboards
 
 import bson
@@ -11,19 +10,13 @@ from app.web.config import ConfigEnv, config
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 
 
-@dataclass
 class Sender:
-    tg_client: TgClient = field(init=False)
-    rabbitMQ: RabbitMQ = field(init=False)
-    cfg: ConfigEnv = field(kw_only=True)
-    _tasks: list[asyncio.Task] = field(default_factory=list)
-    concurrent_workers: int = field(kw_only=True, default=1)
-    logger: logging.Logger = logging.getLogger("worker")
-    routing_key_sender: str = field(init=False, default="sender")
-    routing_key_worker: str = field(init=False, default="worker")
-    queue_name: str = field(init=False, default="tg_bot_sender")
 
-    def __post_init__(self):
+    def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
+        self.cfg = cfg
+        self.concurrent_workers = concurrent_workers
+        self._tasks = []
+        self.logger = logging.getLogger("sender")
         self.tg_client = TgClient(token=self.cfg.tg_token.tg_token)
         self.rabbitMQ = RabbitMQ(
             host=self.cfg.rabbitmq.host,
@@ -31,6 +24,9 @@ class Sender:
             user=self.cfg.rabbitmq.user,
             password=self.cfg.rabbitmq.password,
         )
+        self.routing_key_worker = "worker"
+        self.routing_key_sender = "sender"
+        self.queue_name = "tg_bot_sender"
 
     async def on_message(self, message):
         upd = bson.loads(message.body)

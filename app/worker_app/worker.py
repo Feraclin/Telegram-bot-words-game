@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from dataclasses import dataclass, field
 from random import choice
 
 import bson
@@ -19,22 +18,12 @@ from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 from app.store.yandex_dict_api.accessor import YandexDictAccessor
 
 
-@dataclass
 class Worker:
-    database: Database = field(init=False)
-    words_game: WGAccessor = field(init=False)
-    rabbitMQ: RabbitMQ = field(init=False)
-    yandex_dict: YandexDictAccessor = field(init=False)
-    cfg: ConfigEnv = field(kw_only=True)
-    _tasks: list[asyncio.Task] = field(default_factory=list)
-    concurrent_workers: int = field(kw_only=True, default=1)
-    logger: logging.Logger = logging.getLogger("worker")
-    routing_key_sender: str = field(init=False, default="sender")
-    routing_key_worker: str = field(init=False, default="worker")
-    routing_key_poller: str = field(init=False, default="poller")
-    queue_name: str = field(init=False, default="tg_bot")
 
-    def __post_init__(self):
+    def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
+        self.cfg = cfg
+        self._tasks = []
+        self.concurrent_workers = concurrent_workers
         self.database = Database(cfg=self.cfg)
         self.words_game = WGAccessor(database=self.database)
         self.rabbitMQ = RabbitMQ(
@@ -44,6 +33,11 @@ class Worker:
             password=self.cfg.rabbitmq.password,
         )
         self.yandex_dict = YandexDictAccessor(token=self.cfg.yandex_dict.token)
+        self.logger = logging.getLogger("worker")
+        self.routing_key_worker = "worker"
+        self.routing_key_sender = "sender"
+        self.routing_key_poller = "poller"
+        self.queue_name = "tg_bot"
 
     async def handle_update(self, upd: UpdateObj):
         if upd.message:
