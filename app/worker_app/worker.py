@@ -19,7 +19,6 @@ from app.store.yandex_dict_api.accessor import YandexDictAccessor
 
 
 class Worker:
-
     def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
         self.cfg = cfg
         self._tasks = []
@@ -144,18 +143,19 @@ class Worker:
                     game = await self.words_game.select_active_session_by_id(
                         chat_id=text["chat_id"]
                     )
-                    await self.words_game.update_game_session(game_id=game.id, poll_id=text["poll_id"])
+                    await self.words_game.update_game_session(
+                        game_id=game.id, poll_id=text["poll_id"]
+                    )
                     if text["poll_result"] == "yes":
-                        await self.right_word(game=game,
-                                              word=text["word"])
+                        await self.right_word(game=game, word=text["word"])
                     else:
                         await self.pick_leader(game=game)
                 case "slow_player":
                     game = await self.words_game.select_active_session_by_id(text["chat_id"])
                     if game.next_user_id == text["user_id"]:
-                        await self.words_game.remove_life_from_player(game_id=game.id,
-                                                                      player_id=text["user_id"],
-                                                                      round_=1)
+                        await self.words_game.remove_life_from_player(
+                            game_id=game.id, player_id=text["user_id"], round_=1
+                        )
                         await self.pick_leader(game=game)
                 case _:
                     self.logger.info(f"unknown type {text['type_']}")
@@ -185,21 +185,17 @@ class Worker:
             }
 
             await self.rabbitMQ.send_event(
-                message=message_game_exist,
-                routing_key=self.routing_key_sender
-                                           )
+                message=message_game_exist, routing_key=self.routing_key_sender
+            )
             return
 
         user = await self.words_game.create_user(
-            user_id=upd.message.from_.id,
-            username=upd.message.from_.username
-                                                )
+            user_id=upd.message.from_.id, username=upd.message.from_.username
+        )
 
         await self.words_game.create_game_session(
-            user_id=user.id,
-            chat_id=upd.message.chat.id,
-            chat_type=upd.message.chat.type
-                                                  )
+            user_id=user.id, chat_id=upd.message.chat.id, chat_type=upd.message.chat.type
+        )
 
         message_game_start = {
             "type_": "message",
@@ -208,8 +204,7 @@ class Worker:
         }
 
         await self.rabbitMQ.send_event(
-            message=message_game_start,
-            routing_key=self.routing_key_sender
+            message=message_game_start, routing_key=self.routing_key_sender
         )
 
         await self.pick_city(
@@ -229,22 +224,18 @@ class Worker:
                 "text": f"В этой игре участвовали: {' - '.join(city.name for city in cities)}",
             }
 
-            await self.rabbitMQ.send_event(message=messages_played_city,
-                                           routing_key=self.routing_key_sender)
+            await self.rabbitMQ.send_event(
+                message=messages_played_city, routing_key=self.routing_key_sender
+            )
 
     async def pick_city(
-            self,
-            user_id: int,
-            chat_id: int,
-            username: str,
-            letter: str | None = None
+        self, user_id: int, chat_id: int, username: str, letter: str | None = None
     ) -> None:
         self.logger.info(f"pick_city: {username} {letter}")
         game = await self.words_game.select_active_session_by_id(user_id)
 
         city = await self.words_game.get_city_by_first_letter(
-            letter=letter,
-            game_session_id=game.id
+            letter=letter, game_session_id=game.id
         )
         self.logger.info(f"city: {city}")
         if not city:
@@ -254,11 +245,9 @@ class Worker:
             city.name[-1] if city.name[-1] not in "ьыъйё" else city.name[-2]
         ).capitalize()
 
-        await self.words_game.update_game_session(game_id=game.id,
-                                                  next_letter=first_letter)
+        await self.words_game.update_game_session(game_id=game.id, next_letter=first_letter)
 
-        await self.words_game.set_city_to_used(city_id=city.id,
-                                               game_session_id=game.id)
+        await self.words_game.set_city_to_used(city_id=city.id, game_session_id=game.id)
 
         message_city_start_letter = {
             "type_": "message",
@@ -289,8 +278,7 @@ class Worker:
                 }
 
                 await self.rabbitMQ.send_event(
-                    message=message_city_exist,
-                    routing_key=self.routing_key_sender
+                    message=message_city_exist, routing_key=self.routing_key_sender
                 )
                 return
 
@@ -305,8 +293,7 @@ class Worker:
                 }
 
                 await self.rabbitMQ.send_event(
-                    message=message_right_city,
-                    routing_key=self.routing_key_sender
+                    message=message_right_city, routing_key=self.routing_key_sender
                 )
 
                 await self.pick_city(
@@ -324,8 +311,7 @@ class Worker:
                 }
 
                 await self.rabbitMQ.send_event(
-                    message=message_wrong_start_letter,
-                    routing_key=self.routing_key_sender
+                    message=message_wrong_start_letter, routing_key=self.routing_key_sender
                 )
 
         else:
@@ -336,16 +322,12 @@ class Worker:
             }
 
             await self.rabbitMQ.send_event(
-                message=message_city_not_found,
-                routing_key=self.routing_key_sender)
+                message=message_city_not_found, routing_key=self.routing_key_sender
+            )
 
     async def bot_looser(self, game_session_id: int) -> None:
         game = await self.words_game.update_game_session(game_id=game_session_id, status=False)
-        message_loose = {
-            "type_": "message",
-            "chat_id": game.chat_id,
-            "text": f"Увы, я проиграл"
-        }
+        message_loose = {"type_": "message", "chat_id": game.chat_id, "text": f"Увы, я проиграл"}
         await self.rabbitMQ.send_event(message=message_loose, routing_key=self.routing_key_sender)
 
     # Вариант игры в слова для команды
@@ -387,8 +369,9 @@ class Worker:
                 "callback_id": upd.callback_query.id,
             }
 
-            await self.rabbitMQ.send_event(message=message_add_to_team,
-                                           routing_key=self.routing_key_sender)
+            await self.rabbitMQ.send_event(
+                message=message_add_to_team, routing_key=self.routing_key_sender
+            )
 
     async def pick_leader(self, game: GameSession, player: int = None):
         team = await self.words_game.get_team_by_game_id(game_session_id=game.id)
@@ -423,13 +406,15 @@ class Worker:
             message=message_say_word, routing_key=self.routing_key_sender
         )
 
-        message_slow_player = {"type_": "slow_player",
-                               "chat_id": game.chat_id,
-                               "user_id": player.id}
+        message_slow_player = {
+            "type_": "slow_player",
+            "chat_id": game.chat_id,
+            "user_id": player.id,
+        }
 
-        await self.rabbitMQ.send_event(message=message_slow_player,
-                                       routing_key=self.routing_key_worker,
-                                       delay=10000)
+        await self.rabbitMQ.send_event(
+            message=message_slow_player, routing_key=self.routing_key_worker, delay=10000
+        )
 
     async def check_word(self, upd: UpdateObj) -> None:
         word = upd.message.text.strip("/").capitalize()
@@ -477,9 +462,7 @@ class Worker:
                 return
         if not check:
             await self.words_game.remove_life_from_player(
-                game_id=game.id,
-                player_id=upd.message.from_.id,
-                round_=1
+                game_id=game.id, player_id=upd.message.from_.id, round_=1
             )
             message_no_word = {
                 "type_": "message",
@@ -517,8 +500,7 @@ class Worker:
             message=message_right_word, routing_key=self.routing_key_sender
         )
 
-        await self.words_game.add_used_word(game_session_id=game.id,
-                                            word=word)
+        await self.words_game.add_used_word(game_session_id=game.id, word=word)
 
         await self.words_game.update_game_session(game_id=game.id, next_letter=last_letter)
 
@@ -536,8 +518,7 @@ class Worker:
             "game_id": game.id,
         }
 
-        await self.rabbitMQ.send_event(message=poll_message,
-                                       routing_key=self.routing_key_sender)
+        await self.rabbitMQ.send_event(message=poll_message, routing_key=self.routing_key_sender)
 
     async def stop_game_group(self, upd):
         game = await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)

@@ -11,7 +11,6 @@ from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 
 
 class Sender:
-
     def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
         self.cfg = cfg
         self.concurrent_workers = concurrent_workers
@@ -61,9 +60,8 @@ class Sender:
                 )
             case "message_keyboard":
                 keyboard = await self.tg_client.send_keyboard(
-                    chat_id=upd["chat_id"],
-                    text=upd["text"],
-                    keyboard=keyboards[upd["keyboard"]])
+                    chat_id=upd["chat_id"], text=upd["text"], keyboard=keyboards[upd["keyboard"]]
+                )
                 if upd.get("live_time", None):
                     upd["keyboard_message_id"] = keyboard.result.message_id
                     upd["type_"] = "message_inline_remove_keyboard"
@@ -74,13 +72,10 @@ class Sender:
                     )
             case "message_inline_remove_keyboard":
                 await self.tg_client.remove_inline_keyboard(
-                    chat_id=upd["chat_id"],
-                    message_id=upd["keyboard_message_id"]
+                    chat_id=upd["chat_id"], message_id=upd["keyboard_message_id"]
                 )
-                message = {"type_": "pick_leader",
-                           "chat_id": upd["chat_id"]}
-                await self.rabbitMQ.send_event(message=message,
-                                               routing_key=self.routing_key_worker)
+                message = {"type_": "pick_leader", "chat_id": upd["chat_id"]}
+                await self.rabbitMQ.send_event(message=message, routing_key=self.routing_key_worker)
             case "callback_alert":
                 await self.tg_client.send_callback_alert(
                     callback_id=upd["callback_id"],
@@ -97,9 +92,9 @@ class Sender:
                 upd["type_"] = "send_poll_answer"
                 upd["poll_message_id"] = poll.result.message_id
                 upd["poll_id"] = poll.result.poll.id
-                await self.rabbitMQ.send_event(message=upd,
-                                               routing_key=self.routing_key_sender,
-                                               delay=12000)
+                await self.rabbitMQ.send_event(
+                    message=upd, routing_key=self.routing_key_sender, delay=12000
+                )
             case "send_poll_answer":
                 await self.check_poll(upd)
             case _:
@@ -127,8 +122,7 @@ class Sender:
             res_poll = "no"
 
             await self.tg_client.send_message(
-                chat_id=upd["chat_id"],
-                text=f"{word} - нет такого слова"
+                chat_id=upd["chat_id"], text=f"{word} - нет такого слова"
             )
         message_poll_result = {
             "type_": "poll_result",
@@ -138,8 +132,9 @@ class Sender:
             "word": word,
         }
 
-        await self.rabbitMQ.send_event(message=message_poll_result,
-                                       routing_key=self.routing_key_worker)
+        await self.rabbitMQ.send_event(
+            message=message_poll_result, routing_key=self.routing_key_worker
+        )
 
 
 if __name__ == "__main__":

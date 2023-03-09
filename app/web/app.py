@@ -3,7 +3,7 @@ from typing import Optional
 from aiohttp.web import (
     Application as AiohttpApplication,
     Request as AiohttpRequest,
-    View as AiohttpView
+    View as AiohttpView,
 )
 from aiohttp_apispec import setup_aiohttp_apispec
 from aiohttp_session import setup as session_setup

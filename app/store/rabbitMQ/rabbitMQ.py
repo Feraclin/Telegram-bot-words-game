@@ -87,10 +87,9 @@ class RabbitMQ:
             mandatory=False,
         )
 
-    async def listen_events(self,
-                            routing_key: list[str],
-                            queue_name: str,
-                            on_message_func=None) -> None:
+    async def listen_events(
+        self, routing_key: list[str], queue_name: str, on_message_func=None
+    ) -> None:
         try:
             channel = await self.connection_.channel()
             await channel.set_qos(prefetch_count=1)
