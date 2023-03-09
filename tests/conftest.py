@@ -3,8 +3,8 @@ from random import randint
 from unittest.mock import AsyncMock
 import pytest
 from aioresponses import aioresponses
-from sqlalchemy import event, URL, text, create_engine
-from sqlalchemy.orm import sessionmaker, clear_mappers, Session, scoped_session
+from sqlalchemy import event, URL, create_engine
+from sqlalchemy.orm import sessionmaker, Session, scoped_session
 
 from app.sender.sender import Sender
 from app.web.config import config as cfg
