@@ -5,9 +5,9 @@ from sqlalchemy.future import select
 
 from app.quiz.models import Answer, AnswerModel, Question, QuestionModel, Theme
 from app.store import Store
-from tests.quiz import question2dict
-from tests.utils import check_empty_table_exists
-from tests.utils import ok_response
+from old_tests.quiz import question2dict
+from old_tests.utils import check_empty_table_exists
+from old_tests.utils import ok_response
 
 
 class TestQuestionsStore:

@@ -1,5 +1,5 @@
 from app.store import Store
-from tests.utils import ok_response
+from old_tests.utils import ok_response
 
 
 class TestAdminLoginView:

@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE: 'ktshub/backend-summer-2021:task-9676ecaf-e2a4-473a-803f-df790da37aaa'
-      CONFIGPATH: /go/code/source/tests/config.yml
+      CONFIGPATH: /go/code/source/old_tests/config.yml
       PYTHONPATH: /go/code/source
     services:
       postgres:
@@ -36,7 +36,7 @@ jobs:
         run: echo "PYTHONPATH=$PYTHONPATH:/home/runner/work/hw-backend-summer-2022-3-sqlalchemy/hw-backend-summer-2022-3-sqlalchemy" >> $GITHUB_ENV
 
       - name: set CONFIGPATH
-        run: echo "CONFIGPATH=/home/runner/work/hw-backend-summer-2022-3-sqlalchemy/hw-backend-summer-2022-3-sqlalchemy/tests/config.yml" >> $GITHUB_ENV
+        run: echo "CONFIGPATH=/home/runner/work/hw-backend-summer-2022-3-sqlalchemy/hw-backend-summer-2022-3-sqlalchemy/old_tests/config.yml" >> $GITHUB_ENV
 
       - name: handle migrations
         run:  poetry run alembic upgrade head
