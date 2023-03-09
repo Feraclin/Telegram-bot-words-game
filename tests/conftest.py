@@ -48,7 +48,6 @@ async def worker():
         await worker.database.disconnect()
 
 
-
 @pytest.fixture(autouse=True)
 async def mock_response():
     with aioresponses(passthrough=["http://127.0.0.1"]) as responses_mock:
