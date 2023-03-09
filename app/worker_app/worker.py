@@ -270,6 +270,7 @@ class Worker:
         )
 
     async def check_city(self, upd: UpdateObj) -> None:
+        print("Session ID in check_city:", id(self.database.session))
         if city := await self.words_game.get_city_by_name(upd.message.text.strip("/")):
             letter_num, letter = -1, None
             while abs(letter_num) < len(city.name):
