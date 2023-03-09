@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from app.poller_app.constnant import get_update_timeout
 from app.poller_app.poller import Poller
 from app.web.config import ConfigEnv, config as cfg
-from fixtures import *
+from .fixtures import *
 
 
 @pytest.fixture

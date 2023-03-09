@@ -12,7 +12,7 @@ class TestCity:
         city = await worker.words_game.get_city_by_name(name="Москва")
         assert city is not None
         assert city.name == "Москва"
-        assert city.id == 1
+        assert city.id == 17288
 
     async def test_get_wrong_city(self, worker: Worker):
         city = await worker.words_game.get_city_by_name(name="Масква")

@@ -18,7 +18,7 @@ class GameSession(MappedAsDataclass, DB):
     id: Mapped[int] = mapped_column(primary_key=True)
     game_type: Mapped[str] = mapped_column(nullable=False)
     chat_id: Mapped[bigint] = mapped_column(nullable=False)
-    words: Mapped[list_str] = mapped_column(nullable=True)
+    words: Mapped[str] = mapped_column(nullable=True)
     next_user_id: Mapped[bigint] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
