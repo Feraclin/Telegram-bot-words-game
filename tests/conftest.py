@@ -18,6 +18,7 @@ from app.worker_app.worker import Worker
 def event_loop():
     return asyncio.get_event_loop()
 
+
 @pytest.fixture(scope="session")
 async def sender():
     sender = Sender(cfg=cfg)
@@ -45,6 +46,10 @@ class TestSession(AsyncSession, ABC):
             if transaction.nested and not transaction._parent.nested:
                 session.expire_all()
                 session.begin_nested()
+
+        @event.listens_for(sync_maker, "before_commit")
+        def before_commit(session):
+            print("before commit")
 
 
 sync_maker = sessionmaker()
@@ -83,6 +88,8 @@ async def session(engine):
             await transaction.rollback()
             await connection.close()
 
+
+# @pytest.fixture
 @event.listens_for(sync_maker, "before_commit")
 def before_commit(session):
     print("before commit")

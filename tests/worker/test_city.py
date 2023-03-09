@@ -28,4 +28,3 @@ class TestCity:
                                                             "first_name": "test"}}})
 
         await worker.check_city(upd=upd)
-
