@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import signal
+
 from .messages import keyboards
 
 import bson
@@ -42,6 +44,7 @@ class Sender:
     async def stop(self):
         for task_ in self._tasks:
             task_.cancel()
+        await asyncio.gather(*self._tasks, return_exceptions=True)
         await self.rabbitMQ.disconnect()
 
     async def _worker_rabbit(self):
@@ -147,14 +150,24 @@ if __name__ == "__main__":
 
     loop = asyncio.new_event_loop()
 
+    def stop_sender():
+        loop.create_task(sender.stop())
+        tasks_ = asyncio.all_tasks(loop)
+        for t in tasks_:
+            t.cancel()
+        loop.run_until_complete(asyncio.gather(*tasks_, return_exceptions=True))
+        loop.close()
+
     try:
         loop.create_task(sender.start())
         loop.run_forever()
 
     except KeyboardInterrupt:
         pass
+    except Exception as e:
+        print(f"Error: {e}")
     finally:
-        loop.create_task(sender.stop())
-        for t in (tasks_ := asyncio.all_tasks(loop)):
-            t.cancel()
-        loop.run_until_complete(asyncio.gather(*tasks_, return_exceptions=True))
+        stop_sender()
+
+    for signame in ('SIGINT', 'SIGTERM'):
+        loop.add_signal_handler(getattr(signal, signame), stop_sender)
