@@ -10,20 +10,34 @@ main.py общая точка входа для Poller, Worker и Aiohttp
 
 ### миграции
 
-poetry run alembic revision --autogenerate -m "name"
-poetry run alembic upgrade --head
++ poetry run alembic revision --autogenerate -m "name"
++ poetry run alembic upgrade --head
 
 ### тестовое покрытие
 
-poetry run pytest --cov=app --cov-report=html
++ poetry run pytest --cov=app --cov-report=html
 
 ### aiohttp-devtools
 
-poetry run adev runserver .
++ poetry run adev runserver .
 
 ### примеры команд
+
 Список команд:
-/play - запустить игру,
-/stop - остановить игру,
-/ping проверка работы,
-/help - справка.
++ /play - запустить игру,
++ /stop - остановить игру,
++ /ping проверка работы,
++ /help - справка.
+
+
+### RabbitMQ
+
+Очереди:
+
++ worker - tg_bot
++ sender - tg_bot_sender
+
+Привязки
+
++ tg_bot - poller, worker_self, worker
++ tg_bot_sender - sender

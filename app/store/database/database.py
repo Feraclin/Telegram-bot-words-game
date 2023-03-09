@@ -11,8 +11,11 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from app.store.database import DB
+from sqlalchemy import URL
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_scoped_session, create_async_engine
+from sqlalchemy.orm import declarative_base, DeclarativeBase, sessionmaker
 
+from app.store.database import DB
 
 if TYPE_CHECKING:
     from app.web.app import Application
@@ -46,7 +49,9 @@ class Database:
             )
         self.engine_: AsyncEngine | None = None
         self.db_: DeclarativeBase | None = None
-        self.session: AsyncSession | async_scoped_session | sessionmaker | async_sessionmaker | None = None
+        self.session: AsyncSession | async_scoped_session | sessionmaker | async_sessionmaker | None = (
+            None
+        )
         self.logger = logging.getLogger("database")
 
     async def connect(self, *_: list, **__: dict) -> None:

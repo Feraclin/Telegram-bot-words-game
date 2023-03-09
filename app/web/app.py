@@ -3,7 +3,7 @@ from typing import Optional
 from aiohttp.web import (
     Application as AiohttpApplication,
     Request as AiohttpRequest,
-    View as AiohttpView,
+    View as AiohttpView
 )
 from aiohttp_apispec import setup_aiohttp_apispec
 from aiohttp_session import setup as session_setup
@@ -55,14 +55,12 @@ class View(AiohttpView):
 app = Application(debug=True)
 
 
-def setup_app(config_path: str) -> Application:
+def setup_app() -> Application:
     setup_logging(app)
-    setup_config(app, config_path)
+    setup_config(app)
     session_setup(app, EncryptedCookieStorage(app.config.session.key))
     setup_routes(app)
-    setup_aiohttp_apispec(
-        app, title="Vk Quiz Bot", url="/docs/json", swagger_path="/docs"
-    )
+    setup_aiohttp_apispec(app, title="TG Words Bot", url="/docs/json", swagger_path="/docs")
     setup_middlewares(app)
     setup_store(app)
     return app

@@ -103,6 +103,8 @@ celerybeat.pid
 
 # Environments
 .env
+.envdev
+.env_dev
 .venv
 env/
 venv/
@@ -137,3 +139,5 @@ dmypy.json
 !/.envdev
 /.env_dev
 /.envdev
+.temp
+

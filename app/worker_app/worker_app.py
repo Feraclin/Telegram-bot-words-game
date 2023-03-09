@@ -1,7 +1,7 @@
 import asyncio
 
 from app.web.config import config
-from app.worker_app.worker import Worker
+from worker import Worker
 
 
 if __name__ == "__main__":
@@ -15,4 +15,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     finally:
-        loop.run_until_complete(worker.stop())
+        loop.create_task(worker.stop())
+        for t in (tasks_ := asyncio.all_tasks(loop)):
+            t.cancel()
+        loop.run_until_complete(asyncio.gather(*tasks_, return_exceptions=True))

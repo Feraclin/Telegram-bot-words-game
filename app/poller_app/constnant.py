@@ -1,1 +1,1 @@
-get_update_timeout = 1/20
+get_update_timeout = 1 / 20

@@ -24,7 +24,9 @@ class TgClient:
             async with session.get(url, params=params) as resp:
                 return await resp.json()
 
-    async def get_updates_in_objects(self, offset: int | None = None, timeout: int = 0) -> GetUpdatesResponse:
+    async def get_updates_in_objects(
+        self, offset: int | None = None, timeout: int = 0
+    ) -> GetUpdatesResponse:
         res_dict = await self.get_updates(offset=offset, timeout=timeout)
         try:
             if res_dict.get("result") is not None:
@@ -39,15 +41,23 @@ class TgClient:
             async with session.get(url) as resp:
                 return await resp.json()
 
-    async def send_message(self, chat_id: int, text: str, force_reply: bool = False) -> SendMessageResponse:
+    async def send_message(
+        self, chat_id: int, text: str, force_reply: bool = False
+    ) -> SendMessageResponse:
         url = self.get_url("sendMessage")
-        payload = {"chat_id": chat_id, "text": text, "reply_markup": {"force_reply": force_reply, "selective": True}}
+        payload = {
+            "chat_id": chat_id,
+            "text": text,
+            "reply_markup": {"force_reply": force_reply, "selective": True},
+        }
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
                 return SendMessageResponse.Schema().load(res_dict)
 
-    async def send_keyboard(self, chat_id: int, text: str = "Pick on me", keyboard: dict = None) -> SendMessageResponse:
+    async def send_keyboard(
+        self, chat_id: int, text: str = "Pick on me", keyboard: dict = None
+    ) -> SendMessageResponse:
         url = self.get_url("sendMessage")
         payload = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}
         async with aiohttp.ClientSession() as session:
@@ -71,16 +81,23 @@ class TgClient:
                 return SendMessageResponse.Schema().load(res_dict)
 
     async def send_poll(
-        self, chat_id: int, question: str, answers: list[str], anonymous: bool = False, period: int = 15
+        self,
+        chat_id: int,
+        question: str,
+        options: list[str],
+        anonymous: bool = False,
+        period: int = 15,
     ) -> SendMessageResponse:
         url = self.get_url("sendPoll")
         payload = {
             "chat_id": chat_id,
             "question": question,
-            "options": answers,
+            "options": options,
             "is_anonymous": anonymous,
             "open_period": period,
-            "reply_markup": {"inline_keyboard": [[{"text": "About word", "callback_data": "/pass"}]]},
+            "reply_markup": {
+                "inline_keyboard": [[{"text": "About word", "callback_data": "/pass"}]]
+            },
         }
 
         async with aiohttp.ClientSession() as session:
@@ -90,7 +107,11 @@ class TgClient:
 
     async def remove_inline_keyboard(self, message_id: int, chat_id: int) -> SendMessageResponse:
         url = self.get_url("editMessageReplyMarkup")
-        payload = {"chat_id": chat_id, "message_id": message_id, "reply_markup": {"inline_keyboard": [[]]}}
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "reply_markup": {"inline_keyboard": [[]]},
+        }
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
@@ -113,7 +134,11 @@ class TgClient:
 
     async def edit_message_text(self, chat_id: int, message_id: int):
         url = self.get_url("editMessageText")
-        payload = {"chat_id": chat_id, "message_id": message_id, "text": "Мы учтем ваше мнение(нет)"}
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": "Мы учтем ваше мнение(нет)",
+        }
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()

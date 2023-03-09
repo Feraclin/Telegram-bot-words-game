@@ -8,7 +8,9 @@ from app.base.base_accessor import BaseAccessor
 
 class AdminAccessor(BaseAccessor):
     async def get_by_email(self, email: str) -> Admin | None:
-        res = await self.app.database.execute_query(select(AdminModel).where(AdminModel.email == email))
+        res = await self.app.database.execute_query(
+            select(AdminModel).where(AdminModel.email == email)
+        )
 
         admin = res.scalar()
         if admin:
