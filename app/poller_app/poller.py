@@ -10,6 +10,22 @@ from app.web.config import ConfigEnv, config
 
 
 class Poller:
+    """
+    Класс Poller отвечает за опрос обновлений в Telegram и отправку их в RabbitMQ.
+
+    Атрибуты:
+    - logger: объект logging.Logger для логирования сообщений
+    - _task: объект asyncio.Task для запуска опроса в фоновом режиме
+    - TgClient: объект TgClient для работы с Telegram API
+    - rabbitMQ: объект RabbitMQ для отправки сообщений в очередь
+
+    Методы:
+    - __init__(self, cfg: ConfigEnv): конструктор класса
+    - _poll(self): метод для опроса обновлений в Telegram и отправки их в RabbitMQ
+    - start(self): метод для запуска опроса
+    - stop(self): метод для остановки опроса и закрытия соединения с RabbitMQ
+    """
+
     def __init__(self, cfg: ConfigEnv):
         self.logger = logging.getLogger("poller")
         logging.basicConfig(level=logging.INFO)
@@ -23,6 +39,9 @@ class Poller:
         )
 
     async def _poll(self):
+        """
+        Метод для опроса обновлений в Telegram и отправки их в RabbitMQ.
+        """
         offset = 0
         while True:
             self.logger.info("Polling...")
@@ -34,10 +53,16 @@ class Poller:
                 await asyncio.sleep(get_update_timeout)
 
     async def start(self):
+        """
+        Метод для запуска опроса и открытия соединения с RabbitMQ.
+        """
         self._task = asyncio.create_task(self._poll())
         await self.rabbitMQ.connect()
 
     async def stop(self):
+        """
+        Метод для остановки опроса и закрытия соединения с RabbitMQ.
+        """
         await self.rabbitMQ.disconnect()
         if self._task:
             self._task.cancel()
