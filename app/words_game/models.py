@@ -98,7 +98,7 @@ class GameSettings(MappedAsDataclass, DB):
     id: Mapped[int] = mapped_column(primary_key=True, default=1)
     response_time: Mapped[int] = mapped_column(nullable=False, default=15)
     anonymous_poll: Mapped[bool] = mapped_column(nullable=False, default=True)
-    poll_time: Mapped = mapped_column(nullable=False, default=15)
+    poll_time: Mapped[int] = mapped_column(nullable=False, default=15)
 
     _instance = None
 
@@ -111,23 +111,3 @@ class GameSettings(MappedAsDataclass, DB):
                 session.add(cls._instance)
                 session.commit()
         return cls._instance
-
-
-# TODO: доделать в мидлварку создание настроек
-# from sqlalchemy.orm import Session
-#
-#
-# async def create_game_settings(session: Session):
-#     game_settings = GameSettings()
-#     session.create(game_settings)
-#
-# app = web.Application(middlewares=[create_game_settings])
-#
-# async def on_startup(app):
-#     app['db_session'] = get_session()
-#
-# async def on_cleanup(app):
-#     app['db_session'].close()
-#
-# app.on_startup.append(on_startup)
-# app.on_cleanup.append(on_cleanup)

@@ -13,7 +13,7 @@ from app.words_game.models import (
     UsedCity,
     UserGameSession,
     Words,
-    WordsInGame,
+    WordsInGame, GameSettings,
 )
 from random import choice, randint
 
@@ -245,3 +245,8 @@ class WGAccessor:
         res = await self.database.execute_query(query)
         players = [(player.player.username, player.point) for player in res.scalars().all()]
         return players
+
+    def get_game_settings(self):
+        query = select(GameSettings)
+        res = await self.database.execute_query(query)
+        return res.scalar_one()

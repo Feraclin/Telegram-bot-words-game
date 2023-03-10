@@ -7,7 +7,7 @@ from aio_pika.abc import AbstractIncomingMessage
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
-from app.worker_app.constant import help_msg
+from app.worker_app.constant import help_msg, GameSettings
 from app.store.tg_api.schemes import UpdateObj
 from app.words_game.models import GameSession
 
@@ -37,6 +37,11 @@ class Worker:
         self.routing_key_sender = "sender"
         self.routing_key_poller = "poller"
         self.queue_name = "tg_bot"
+        self.game_settings: GameSettings | None = None
+
+    async def setup_settings(self):
+        self.game_settings = self.words_game.get_game_settings()
+
 
     async def handle_update(self, upd: UpdateObj):
         if upd.message:
