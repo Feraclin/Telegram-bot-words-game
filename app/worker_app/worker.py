@@ -37,6 +37,7 @@ class Worker:
     queue_name (str): Название очереди для прослушивания.
     game_settings (GameSettings | None): Объект настроек игры.
     """
+
     def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
         self.cfg = cfg
         self._tasks = []

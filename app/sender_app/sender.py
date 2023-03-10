@@ -34,6 +34,7 @@ class Sender:
     - handle_update(self, upd: dict): метод для обработки обновлений из Telegram
     - check_poll(self, upd: dict): метод для проверки результатов опроса
     """
+
     def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
         """
         Конструктор класса Sender.
@@ -79,7 +80,8 @@ class Sender:
 
     async def stop(self):
         """
-        Метод для остановки Sender и остановки работника для получения сообщений из очереди RabbitMQ.
+        Метод для остановки Sender и остановки работника для получения
+        сообщений из очереди RabbitMQ.
         """
         for task_ in self._tasks:
             task_.cancel()
@@ -137,15 +139,15 @@ class Sender:
                 message = {"type_": "pick_leader", "chat_id": upd["chat_id"]}
                 await self.rabbitMQ.send_event(message=message, routing_key=self.routing_key_worker)
             case "callback_alert":
-                """ 
-                Обработка callback alert. 
+                """
+                Обработка callback alert.
                 """
                 await self.tg_client.send_callback_alert(
                     callback_id=upd["callback_id"],
                     text=upd["text"],
                 )
             case "send_poll":
-                """ 
+                """
                 Отправка опроса в чат.
                 """
                 poll = await self.tg_client.send_poll(
@@ -164,12 +166,12 @@ class Sender:
                     delay=(upd["period"] + 2) * 1000,
                 )
             case "send_poll_answer":
-                """ 
+                """
                 Проверка ответов на опрос.
                 """
                 await self.check_poll(upd)
             case _:
-                """ 
+                """
                 Обработка неизвестного типа сообщения.
                 """
                 self.logger.error(f"Unknown type: {upd['type_']}")

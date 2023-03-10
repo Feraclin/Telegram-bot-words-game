@@ -25,6 +25,7 @@ class Poller:
     - start(self): метод для запуска опроса
     - stop(self): метод для остановки опроса и закрытия соединения с RabbitMQ
     """
+
     def __init__(self, cfg: ConfigEnv):
         self.logger = logging.getLogger("poller")
         logging.basicConfig(level=logging.INFO)
