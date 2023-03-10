@@ -19,6 +19,24 @@ from app.store.yandex_dict_api.accessor import YandexDictAccessor
 
 
 class Worker:
+    """
+    Класс Worker для обработки логики игры и связи с внешними сервисами.
+
+    Атрибуты:
+    cfg (ConfigEnv): Объект конфигурации.
+    concurrent_workers (int): Количество одновременных рабочих процессов.
+    _tasks (list): Список задач для выполнения одновременно.
+    database (Database): Объект базы данных для взаимодействия с базой данных игры.
+    words_game (WGAccessor): Объект-аксессор для взаимодействия с сервисом Words Game.
+    rabbitMQ (RabbitMQ): Объект RabbitMQ для связи с другими сервисами.
+    yandex_dict (YandexDictAccessor): Объект-аксессор для взаимодействия с API Яндекс.Словаря.
+    logger (logging.Logger): Объект логгера для записи событий.
+    routing_key_worker (str): Ключ маршрутизации для сообщений рабочего процесса.
+    routing_key_sender (str): Ключ маршрутизации для сообщений отправителя.
+    routing_key_poller (str): Ключ маршрутизации для сообщений опросника.
+    queue_name (str): Название очереди для прослушивания.
+    game_settings (GameSettings | None): Объект настроек игры.
+    """
     def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
         self.cfg = cfg
         self._tasks = []
@@ -40,9 +58,19 @@ class Worker:
         self.game_settings: GameSettings | None = None
 
     async def setup_settings(self):
+        """
+        Инициализация настроек игры.
+        :return:
+        """
         self.game_settings = GameSettings(**(await self.words_game.get_game_settings()).__dict__)
 
     async def handle_update(self, upd: UpdateObj):
+        """
+        Обработка сообщений.
+
+        :param upd: Объект обновления.
+        :return:
+        """
         if upd.message:
             try:
                 match upd.message.text:
@@ -120,6 +148,10 @@ class Worker:
                 self.logger.info(f"callback {e}")
 
     async def _worker_rabbit(self):
+        """
+        Метод для прослушивания событий RabbitMQ.
+        :return:
+        """
         await self.rabbitMQ.listen_events(
             on_message_func=self.on_message,
             routing_key=[self.routing_key_worker, self.routing_key_poller],
@@ -127,6 +159,12 @@ class Worker:
         )
 
     async def on_message(self, message: AbstractIncomingMessage):
+        """
+        Обработка сообщений из очереди RabbitMQ.
+
+        :param message:
+        :return:
+        """
         if message.routing_key == "poller":
             try:
                 upd = UpdateObj.Schema().load(bson.loads(message.body))
@@ -166,6 +204,9 @@ class Worker:
         await message.ack()
 
     async def start(self):
+        """
+        Метод start для запуска рабочих процессов и подключения к базе данных и RabbitMQ.
+        """
         await self.database.connect()
         await self.rabbitMQ.connect()
         self._tasks = [
@@ -173,6 +214,9 @@ class Worker:
         ]
 
     async def stop(self):
+        """
+        Метод stop для остановки рабочих процессов и отключения от базы данных и RabbitMQ.
+        """
         for t in self._tasks:
             t.cancel()
         await self.rabbitMQ.disconnect()
@@ -181,6 +225,12 @@ class Worker:
     # Вариант игры в города для одного игрока
 
     async def start_game(self, upd: UpdateObj) -> None:
+        """
+        Метод start_game для запуска игры в города для одного игрока.
+
+        :param upd:
+        :return:
+        """
         if await self.words_game.select_active_session_by_id(upd.message.from_.id):
             message_game_exist = {
                 "type_": "message",
@@ -218,6 +268,12 @@ class Worker:
         )
 
     async def stop_game(self, upd: UpdateObj) -> None:
+        """
+        Метод stop_game для остановки игры в города для одного игрока.
+
+        :param upd:
+        :return:
+        """
         if game := await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id):
             await self.words_game.update_game_session(game_id=game.id, status=False)
             cities = await self.words_game.get_city_list_by_session_id(game_session_id=game.id)
@@ -235,6 +291,15 @@ class Worker:
     async def pick_city(
         self, user_id: int, chat_id: int, username: str, letter: str | None = None
     ) -> None:
+        """
+        Метод pick_city для выбора города ботом.
+
+        :param user_id: id игрока
+        :param chat_id: id чата
+        :param username: ник игрока
+        :param letter: первая буква города
+        :return:
+        """
         self.logger.info(f"pick_city: {username} {letter}")
         game = await self.words_game.select_active_session_by_id(user_id)
 
@@ -263,6 +328,12 @@ class Worker:
         )
 
     async def check_city(self, upd: UpdateObj) -> None:
+        """
+        Метод check_city для проверки наличия города в игре и существование города.
+
+        :param upd:
+        :return:
+        """
         if city := await self.words_game.get_city_by_name(upd.message.text.strip("/")):
             letter_num, letter = -1, None
             while abs(letter_num) < len(city.name):
@@ -332,6 +403,12 @@ class Worker:
             )
 
     async def bot_looser(self, game_session_id: int) -> None:
+        """
+        Метод поражения бота и завершения игры
+
+        :param game_session_id: id игры
+        :return:
+        """
         game = await self.words_game.update_game_session(game_id=game_session_id, status=False)
         message_loose = {"type_": "message", "chat_id": game.chat_id, "text": f"Увы, я проиграл"}
         await self.rabbitMQ.send_event(message=message_loose, routing_key=self.routing_key_sender)
@@ -339,6 +416,12 @@ class Worker:
     # Вариант игры в слова для команды
 
     async def chose_your_team(self, upd: UpdateObj) -> None:
+        """
+        Метод формирования игры в слова для команды и самой команды
+
+        :param upd:
+        :return:
+        """
         if await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id):
             return
         async with asyncio.Lock():
@@ -351,7 +434,7 @@ class Worker:
         message_create_team = {
             "type_": "message_keyboard",
             "chat_id": upd.message.chat.id,
-            "text": f"Создай игроков",
+            "text": f"Будешь играть в игру?",
             "keyboard": "keyboard_team",
             "live_time": 5,
         }
@@ -361,6 +444,12 @@ class Worker:
         )
 
     async def add_to_team(self, upd: UpdateObj) -> None:
+        """
+        Метод добавления игрока в игру
+
+        :param upd:
+        :return:
+        """
         game = await self.words_game.select_active_session_by_id(
             chat_id=upd.callback_query.message.chat.id
         )
@@ -380,6 +469,15 @@ class Worker:
             )
 
     async def pick_leader(self, game: GameSession, player: int = None):
+        """
+        Метод выбора игрока для ответа
+        (для исключения подстав среди игроков в
+        каждом раунде игрок выбирается случайно из еще не игравших в раунде)
+
+        :param game:
+        :param player:
+        :return:
+        """
         team = await self.words_game.get_team_by_game_id(game_session_id=game.id)
 
         if not team:
@@ -425,6 +523,12 @@ class Worker:
         )
 
     async def check_word(self, upd: UpdateObj) -> None:
+        """
+        Метод проверки слова на существование в словаре или вызове голосования
+
+        :param upd:
+        :return:
+        """
         word = upd.message.text.strip("/").capitalize()
         game = await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
         check = False
@@ -487,6 +591,13 @@ class Worker:
             await self.right_word(game=game, word=word)
 
     async def right_word(self, game: GameSession, word: str):
+        """
+        Подтверждение правильного слова и выбор новой первой буквы
+
+        :param game: игра
+        :param word: слово
+        :return:
+        """
         await self.words_game.update_team(
             game_session_id=game.id, user_id=game.next_user_id, point=1, round_=1
         )
@@ -517,6 +628,14 @@ class Worker:
         await self.pick_leader(game=game)
 
     async def words_poll(self, upd: UpdateObj, word: str, game: GameSession) -> None:
+        """
+        Метод отправки голосования
+
+        :param upd:
+        :param word: слово
+        :param game: игра
+        :return:
+        """
         poll_message = {
             "type_": "send_poll",
             "chat_id": upd.message.chat.id,
@@ -530,6 +649,12 @@ class Worker:
         await self.rabbitMQ.send_event(message=poll_message, routing_key=self.routing_key_sender)
 
     async def stop_game_group(self, upd):
+        """
+        Метод остановки игры
+
+        :param upd:
+        :return:
+        """
         game = await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
         if not game:
             return
