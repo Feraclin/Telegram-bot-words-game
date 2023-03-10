@@ -438,7 +438,7 @@ class WGAccessor:
         players = [(player.player.username, player.point) for player in res.scalars().all()]
         return players
 
-    def get_game_settings(self):
+    async def get_game_settings(self):
         """
         Получение настроек игры.
 
