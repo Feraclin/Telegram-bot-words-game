@@ -81,6 +81,7 @@ class Database:
 
     async def disconnect(self, *_: list, **__: dict) -> None:
         try:
-            await self.engine_.dispose()
+            if self.engine_:
+                await self.engine_.dispose()
         except Exception as e:
             self.logger.info(f"Disconnect from engine error {e}")

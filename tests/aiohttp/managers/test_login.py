@@ -1,5 +1,5 @@
 from app.store import Store
-from old_tests.utils import ok_response
+from tests.aiohttp.utils import ok_response
 
 
 class TestAdminLoginView:

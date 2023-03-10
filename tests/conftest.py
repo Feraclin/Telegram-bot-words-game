@@ -1,16 +1,17 @@
 import asyncio
-from random import randint
+from typing import Dict, Any
 from unittest.mock import AsyncMock
 import pytest
+from aio_pika.abc import AbstractIncomingMessage, AbstractMessage
 from aioresponses import aioresponses
 from sqlalchemy import event, URL, create_engine
 from sqlalchemy.orm import sessionmaker, Session, scoped_session
 
 from app.sender.sender import Sender
 from app.web.config import config as cfg
-from app.words_game.models import GameSession, User
+from app.words_game.models import GameSession, User, City
 from app.worker_app.worker import Worker
-
+from app.store.database import DB
 
 url = URL.create(
     drivername="postgresql+psycopg2",
@@ -21,10 +22,12 @@ url = URL.create(
     port=cfg.database.port,
 )
 
+
 @pytest.fixture(autouse=True)
 async def mock_response():
     with aioresponses(passthrough=["http://127.0.0.1"]) as responses_mock:
         yield responses_mock
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -34,6 +37,7 @@ def event_loop():
 @pytest.fixture(scope="session")
 async def sender():
     sender = Sender(cfg=cfg)
+    return sender
 
 
 @pytest.fixture(scope="session")
@@ -75,6 +79,7 @@ def engine():
         url=url,
         future=True,
     )
+    DB.metadata.create_all(engine)
     yield engine
     engine.dispose()
 
@@ -96,10 +101,23 @@ def session(engine):
 
 
 @pytest.fixture(scope="function")
+async def city(session):
+    city = City(id=200000,
+                name="test_city")
+    session.add(city)
+    session.commit()
+    try:
+        yield city
+    finally:
+        session.delete(city)
+        session.commit()
+
+
+@pytest.fixture(scope="function")
 async def user(session):
     user = User(
         username="test_user",
-        id=randint(1, 100000000),
+        id=50000,
     )
 
     session.add(user)
@@ -112,18 +130,50 @@ async def user(session):
 
 
 @pytest.fixture(scope="function")
-async def game(session, user):
+async def user1(session):
+    user = User(
+        username="test_user1",
+        id=50001,
+    )
+
+    session.add(user)
+    session.commit()
+    try:
+        yield user
+    finally:
+        session.delete(user)
+        session.commit()
+
+
+@pytest.fixture(scope="function")
+async def user2(session):
+    user = User(
+        username="test_user2",
+        id=50002,
+    )
+
+    session.add(user)
+    session.commit()
+    try:
+        yield user
+    finally:
+        session.delete(user)
+        session.commit()
+
+
+@pytest.fixture(scope="function")
+async def game(session, user, user1):
     game = GameSession(
         game_type="group",
-        chat_id=randint(1, 100000000),
+        chat_id=200,
         is_active=True,
-        id=randint(1, 100000000),
+        id=50000,
         winner=None,
         winner_id=None,
         creator_id=user.id,
         creator=user,
-        next_user_id=None,
-        next_user=None,
+        next_user_id=user1.id,
+        next_user=user1,
         words=[]
     )
     session.add(game)
@@ -141,13 +191,46 @@ async def test_game_session_exists(session, game):
     assert game_session.id == game.id
 
 
-# async def test_pick_city(worker: Worker, session, game):
-#     await worker.pick_city(
-#         user_id=game.creator_id,
-#         chat_id=game.chat_id,
-#         username="test_user",
-#         letter="А"
-#     )
-#     game_session = session.get(GameSession, game.id)
-#     assert game_session.next_start_letter is None
+class IncomingMessage(AbstractIncomingMessage):
+    def __copy__(self) -> "AbstractMessage":
+        pass
 
+    def info(self) -> Dict[str, Any]:
+        pass
+
+    def __init__(self, body, routing_key):
+        self.body = body
+        self.routing_key = routing_key
+
+    def __iter__(self):
+        yield self.body
+
+    async def ack(self, **kwargs):
+        pass
+
+    def channel(self):
+        pass
+
+    def headers(self):
+        pass
+
+    def lock(self):
+        pass
+
+    def locked(self):
+        pass
+
+    def nack(self, **kwargs):
+        pass
+
+    def process(self, **kwargs):
+        pass
+
+    def processed(self):
+        pass
+
+    def properties(self):
+        pass
+
+    def reject(self, **kwargs):
+        pass
