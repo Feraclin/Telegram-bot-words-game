@@ -293,7 +293,8 @@ class Worker:
                 message_right_city = {
                     "type_": "message",
                     "chat_id": upd.message.chat.id,
-                    "text": f"{upd.message.from_.username} {city.name} Есть такой город. Мне на {letter}",
+                    "text": f"{upd.message.from_.username} "
+                    f"{city.name} Есть такой город. Мне на {letter}",
                 }
 
                 await self.rabbitMQ.send_event(
@@ -311,7 +312,8 @@ class Worker:
                 message_wrong_start_letter = {
                     "type_": "message",
                     "chat_id": upd.message.chat.id,
-                    "text": f"{upd.message.from_.username} {city.name} на {city.name[0]}, а тебе на {game.next_start_letter}",
+                    "text": f"{upd.message.from_.username} "
+                    f"{city.name} на {city.name[0]}, а тебе на {game.next_start_letter}",
                 }
 
                 await self.rabbitMQ.send_event(
@@ -419,7 +421,7 @@ class Worker:
         await self.rabbitMQ.send_event(
             message=message_slow_player,
             routing_key=self.routing_key_worker,
-            delay=self.game_settings.response_time*1000 if self.game_settings else 15000,
+            delay=self.game_settings.response_time * 1000 if self.game_settings else 15000,
         )
 
     async def check_word(self, upd: UpdateObj) -> None:
@@ -537,6 +539,7 @@ class Worker:
         message_no_team = {
             "type_": "message",
             "chat_id": game.chat_id,
-            "text": f"Игра окончена. {' '.join(f'@{player[0]} - {player[1]}' for player in team_lst)}",
+            "text": f"Игра окончена. "
+            f"{' - '.join(f'@{player[0]} - {player[1]}' for player in team_lst)}",
         }
         await self.rabbitMQ.send_event(message=message_no_team, routing_key=self.routing_key_sender)

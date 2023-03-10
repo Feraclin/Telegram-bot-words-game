@@ -13,7 +13,8 @@ from app.words_game.models import (
     UsedCity,
     UserGameSession,
     Words,
-    WordsInGame, GameSettings,
+    WordsInGame,
+    GameSettings,
 )
 from random import choice, randint
 

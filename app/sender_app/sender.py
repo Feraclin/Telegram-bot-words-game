@@ -93,7 +93,9 @@ class Sender:
                 upd["poll_message_id"] = poll.result.message_id
                 upd["poll_id"] = poll.result.poll.id
                 await self.rabbitMQ.send_event(
-                    message=upd, routing_key=self.routing_key_sender, delay=(upd["period"] + 2) * 1000
+                    message=upd,
+                    routing_key=self.routing_key_sender,
+                    delay=(upd["period"] + 2) * 1000,
                 )
             case "send_poll_answer":
                 await self.check_poll(upd)
