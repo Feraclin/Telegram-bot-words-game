@@ -40,8 +40,7 @@ class Worker:
         self.game_settings: GameSettings | None = None
 
     async def setup_settings(self):
-        self.game_settings = self.words_game.get_game_settings()
-
+        self.game_settings = GameSettings(**(await self.words_game.get_game_settings()).__dict__)
 
     async def handle_update(self, upd: UpdateObj):
         if upd.message:
@@ -418,7 +417,9 @@ class Worker:
         }
 
         await self.rabbitMQ.send_event(
-            message=message_slow_player, routing_key=self.routing_key_worker, delay=10000
+            message=message_slow_player,
+            routing_key=self.routing_key_worker,
+            delay=self.game_settings.response_time*1000 if self.game_settings else 15000,
         )
 
     async def check_word(self, upd: UpdateObj) -> None:
@@ -519,8 +520,9 @@ class Worker:
             "chat_id": upd.message.chat.id,
             "question": f"Граждане примем ли мы {word} как допустимое слово?",
             "options": ["Yes", "No", "Слово?"],
-            "anonymous": False,
+            "anonymous": self.game_settings.anonymous_poll if self.game_settings else False,
             "game_id": game.id,
+            "period": self.game_settings.poll_time if self.game_settings else 10,
         }
 
         await self.rabbitMQ.send_event(message=poll_message, routing_key=self.routing_key_sender)

@@ -87,13 +87,13 @@ class Sender:
                     question=upd["question"],
                     options=upd["options"],
                     anonymous=upd["anonymous"],
-                    period=10,
+                    period=upd["period"],
                 )
                 upd["type_"] = "send_poll_answer"
                 upd["poll_message_id"] = poll.result.message_id
                 upd["poll_id"] = poll.result.poll.id
                 await self.rabbitMQ.send_event(
-                    message=upd, routing_key=self.routing_key_sender, delay=12000
+                    message=upd, routing_key=self.routing_key_sender, delay=(upd["period"] + 2) * 1000
                 )
             case "send_poll_answer":
                 await self.check_poll(upd)
