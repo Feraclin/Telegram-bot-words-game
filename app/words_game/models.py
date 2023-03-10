@@ -98,7 +98,7 @@ class GameSettings(MappedAsDataclass, DB):
     id: Mapped[int] = mapped_column(primary_key=True, default=1)
     response_time: Mapped[int] = mapped_column(nullable=False, default=15)
     anonymous_poll: Mapped[bool] = mapped_column(nullable=False, default=True)
-    poll_time: Mapped = mapped_column(nullable=False, default=15)
+    poll_time: Mapped[int] = mapped_column(nullable=False, default=15)
 
     _instance = None
 
