@@ -1,4 +1,4 @@
-FROM builder
+FROM builder as poller
 WORKDIR /code
 COPY ./app/poller_app/  /code/app/poller_app/
 COPY ./app/store/rabbitMQ/  /code/app/poller_app/app/store/rabbitMQ/

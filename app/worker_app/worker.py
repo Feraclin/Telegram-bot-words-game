@@ -7,7 +7,7 @@ from aio_pika.abc import AbstractIncomingMessage
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
-from app.worker_app.constant import help_msg
+from constant import help_msg
 from app.store.tg_api.schemes import UpdateObj
 from app.words_game.models import GameSession
 

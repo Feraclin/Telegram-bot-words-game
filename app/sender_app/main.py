@@ -1,7 +1,7 @@
 import asyncio
 
-from app.sender_app.sender import Sender
-from app.web.config import ConfigEnv, config
+from sender import Sender
+from app.web.config import config
 
 
 if __name__ == "__main__":

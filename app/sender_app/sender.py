@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from .messages import keyboards
+from messages import keyboards
 
 import bson
 
@@ -8,7 +8,7 @@ from app.store.tg_api.client import TgClient
 
 
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
-from ..web.config import ConfigEnv
+from app.web.config import ConfigEnv
 
 
 class Sender:
