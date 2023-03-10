@@ -23,7 +23,7 @@ if __name__ == "__main__":
         site = TCPSite(run, "localhost", 8090)
         await site.start()
 
-    async def stop_all(loop):
+    def stop_all(loop):
         loop.stop()
         loop.create_task(poller.stop())
         loop.create_task(worker.stop())
@@ -33,7 +33,6 @@ if __name__ == "__main__":
         for t in tasks_:
             t.cancel()
         loop.run_until_complete(asyncio.gather(*tasks_, return_exceptions=True))
-        loop.close()
 
     loop = asyncio.new_event_loop()
     try:
@@ -47,7 +46,8 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        await stop_all(loop)
+        stop_all(loop)
+        loop.close()
 
     for signame in ('SIGINT', 'SIGTERM'):
         loop.add_signal_handler(getattr(signal, signame), lambda: asyncio.create_task(stop_all(loop)))

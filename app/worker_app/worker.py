@@ -152,6 +152,7 @@ class Worker:
                         await self.pick_leader(game=game)
                 case "slow_player":
                     game = await self.words_game.select_active_session_by_id(text["chat_id"])
+                    print(game)
                     if game.next_user_id == text["user_id"]:
                         await self.words_game.remove_life_from_player(game_id=game.id,
                                                                       player_id=text["user_id"],

@@ -1,11 +1,10 @@
 import asyncio
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from app.poller_app.constnant import get_update_timeout
 from app.poller_app.poller import Poller
-from app.web.config import ConfigEnv, config as cfg
+from app.web.config import config as cfg
 from .fixtures import *
 
 
