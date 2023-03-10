@@ -481,6 +481,9 @@ class Worker:
         team = await self.words_game.get_team_by_game_id(game_session_id=game.id)
 
         if not team:
+            """
+            Если игроков нет в игре, то игра окончена
+            """
             await self.words_game.update_game_session(game_id=game.id, status=False)
             message_no_team = {"type_": "message", "chat_id": game.chat_id, "text": "Игорьков нет"}
             await self.rabbitMQ.send_event(
@@ -533,6 +536,9 @@ class Worker:
         game = await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
         check = False
         if game.next_user_id != upd.message.from_.id:
+            """
+            Удаление жизни игрока в случае несовпадения id игрока и id текущего игрока
+            """
             message_wrong_user = {
                 "type_": "message",
                 "chat_id": upd.message.chat.id,
@@ -546,6 +552,9 @@ class Worker:
                 game_id=game.id, player_id=upd.message.from_.id
             )
         elif game.next_start_letter and game.next_start_letter.lower() != word[0].lower():
+            """
+            Слово не начинается с буквы с которой закончилось прошлое
+            """
             message_wrong_start_letter = {
                 "type_": "message",
                 "chat_id": upd.message.chat.id,
@@ -557,6 +566,9 @@ class Worker:
             )
             return await self.pick_leader(game=game)
         elif word in await self.words_game.get_list_words_by_game_id(game_session_id=game.id):
+            """
+            Слово уже было
+            """
             message_already_word = {
                 "type_": "message",
                 "chat_id": upd.message.chat.id,
@@ -567,12 +579,21 @@ class Worker:
             )
             return await self.pick_leader(game=game)
         else:
+            """
+            Проверка слова в словаре
+            """
             check = await self.yandex_dict.check_word_(text=word)
 
             if not check:
+                """
+                Проверка слова в словаре не удалась, голосование
+                """
                 await self.words_poll(word=word, game=game, upd=upd)
                 return
         if not check:
+            """
+            Проверка слова в словаре не удалась, голосование не удалось
+            """
             await self.words_game.remove_life_from_player(
                 game_id=game.id, player_id=upd.message.from_.id, round_=1
             )
