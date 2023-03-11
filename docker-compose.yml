@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.5'
 
 services:
   db:
@@ -41,9 +41,10 @@ services:
     restart: always
     env_file:
       - .env_dev
-    command: bash -c "cd ./app/poller_app/ && poetry run python poller.py"
+    command: bash -c "cd /code/app/poller_app/ && python main.py"
     depends_on:
-      - aiohttp_app
+      - db
+      - rabbitmq
     networks:
       - kts_st_week3
 
@@ -54,7 +55,7 @@ services:
     restart: always
     env_file:
       - .env_dev
-    command: bash -c "cd ./app/worker_app && poetry run python worker_app.py"
+    command: bash -c "cd /code/app/worker_app/ && python main.py"
     depends_on:
       - poller_app
     networks:
@@ -64,12 +65,11 @@ services:
     build:
       context: .
       dockerfile: ./compose/sender/Dockerfile
-    restart: always
+    command: bash -c "cd /code/app/sender_app/ && python main.py"
+    depends_on:
+      - worker_app
     env_file:
       - .env_dev
-    command: bash -c "cd ./app/sender_app && poetry run python sender.py"
-    depends_on:
-      - worker_app_app
     networks:
       - kts_st_week3
 
@@ -80,7 +80,7 @@ services:
     restart: always
     env_file:
       - .env_dev
-    command: bash -c "poetry run alembic upgrade head && poetry run python aiohttp_app_main.py"
+    command: bash -c "alembic upgrade head && python aiohttp_app_main.py"
     depends_on:
       - db
       - rabbitmq
