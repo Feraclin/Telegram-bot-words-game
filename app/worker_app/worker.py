@@ -6,11 +6,9 @@ import bson
 from aio_pika.abc import AbstractIncomingMessage
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
-
-from app.worker_app.constant import help_msg, GameSettings
+from constant import help_msg, GameSettings
 from app.store.tg_api.schemes import UpdateObj
 from app.words_game.models import GameSession
-
 from app.web.config import ConfigEnv
 from app.store.words_game.accessor import WGAccessor
 from app.store.database.database import Database
