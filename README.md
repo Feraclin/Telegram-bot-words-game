@@ -41,3 +41,8 @@ main.py общая точка входа для Poller, Worker и Aiohttp
 
 + tg_bot - poller, worker_self, worker
 + tg_bot_sender - sender
+
+
+### Docker
+
+Сборка builder: docker build -t builder -f compose/builder.Dockerfile .

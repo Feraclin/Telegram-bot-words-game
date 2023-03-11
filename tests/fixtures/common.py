@@ -24,9 +24,7 @@ def event_loop():
 @pytest.fixture(scope="session")
 def server():
     app = setup_app(
-        config_path=os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "..", "config.yml"
-        )
+        config_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "config.yml")
     )
     app.on_startup.clear()
     app.on_shutdown.clear()
