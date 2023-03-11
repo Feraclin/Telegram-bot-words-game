@@ -41,8 +41,8 @@ class PlayerListResponseSchema(Schema):
 
 
 class PaginationSchema(Schema):
-    page = fields.Str(default="1")
-    per_page = fields.Integer(default="20")
+    page = fields.Integer(default=1)
+    per_page = fields.Integer(default=20)
 
 
 class GameSettingsSchema(Schema):
@@ -53,4 +53,4 @@ class GameSettingsSchema(Schema):
 
 class PaginationSchemaGames(Schema):
     page = fields.Integer(default=1)
-    per_page = fields.Integer(default=10)
+    per_page = fields.Integer(default=20)
