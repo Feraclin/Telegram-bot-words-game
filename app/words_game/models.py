@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey, select
-from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass, selectinload
+from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
 
 from app.store.database.sqlalchemy_base import DB, bigint, list_str
 

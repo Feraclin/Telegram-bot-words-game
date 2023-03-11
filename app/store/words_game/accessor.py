@@ -457,7 +457,9 @@ class WGAccessor:
         :param player_id: id игрока
         :param game_session_id: id игровой сессии
         """
-        query = select(UserGameSession.life).where(UserGameSession.player_id == player_id,
-                                                   UserGameSession.game_sessions_id == game_session_id)
+        query = select(UserGameSession.life).where(
+            UserGameSession.player_id == player_id,
+            UserGameSession.game_sessions_id == game_session_id,
+        )
         res = await self.database.execute_query(query)
         return res.scalar()

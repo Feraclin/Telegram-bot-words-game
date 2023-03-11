@@ -6,15 +6,12 @@ from app.web.config import config
 
 
 if __name__ == "__main__":
-
     poller = Poller(cfg=config)
     loop = asyncio.new_event_loop()
-
 
     async def handle_sigterm(*args):
         for task_ in asyncio.all_tasks(loop=loop):
             task_.cancel()
-
 
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
