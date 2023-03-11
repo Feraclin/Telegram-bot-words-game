@@ -35,7 +35,6 @@ class PrivatePlayKeyboard:
         if not self.keyboard:
             self.keyboard = [[{"text": "/yes"}, {"text": "/no"}]]
 
-
     def __str__(self):
         return {
             "keyboard": self.keyboard,
@@ -54,7 +53,9 @@ class TeamKeyboard:
 
     def __post_init__(self):
         if not self.inline_keyboard:
-            self.inline_keyboard = [[{"text": "Yes", "callback_data": "/yes"}, {"text": "No", "callback_data": "/no"}]]
+            self.inline_keyboard = [
+                [{"text": "Yes", "callback_data": "/yes"}, {"text": "No", "callback_data": "/no"}]
+            ]
 
     def __str__(self):
         return {

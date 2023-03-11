@@ -23,17 +23,14 @@ if __name__ == "__main__":
         site = TCPSite(run, 8090)
         await site.start()
 
-
     async def handle_sigterm(*args):
         raise KeyboardInterrupt()
-
 
     loop = asyncio.new_event_loop()
 
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
-        loop.add_signal_handler(
-            s, lambda: asyncio.create_task(handle_sigterm()))
+        loop.add_signal_handler(s, lambda: asyncio.create_task(handle_sigterm()))
 
     try:
         loop.create_task(poller.start())

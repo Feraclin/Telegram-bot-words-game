@@ -28,9 +28,7 @@ class TestThemeStore:
         assert theme.title == theme_title
         assert theme.id == 1
 
-    async def test_create_theme_unique_title_constraint(
-        self, cli, store: Store, theme_1: Theme
-    ):
+    async def test_create_theme_unique_title_constraint(self, cli, store: Store, theme_1: Theme):
         with pytest.raises(IntegrityError) as exc_info:
             await store.quizzes.create_theme(theme_1.title)
         assert exc_info.value.orig.pgcode == "23505"
@@ -43,9 +41,7 @@ class TestThemeStore:
         theme = await store.quizzes.get_theme_by_title(theme_1.title)
         assert theme == theme_1
 
-    async def test_check_cascade_delete(
-        self, cli, theme_1: Theme, question_1: Question
-    ):
+    async def test_check_cascade_delete(self, cli, theme_1: Theme, question_1: Question):
         async with cli.app.database.session() as session:
             await session.execute(delete(ThemeModel).where(ThemeModel.id == theme_1.id))
             await session.commit()
@@ -141,9 +137,7 @@ class TestThemeList:
         resp = await authed_cli.get("/quiz_accessor.list_themes")
         assert resp.status == 200
         data = await resp.json()
-        assert data == ok_response(
-            data={"themes": [theme2dict(theme_1), theme2dict(theme_2)]}
-        )
+        assert data == ok_response(data={"themes": [theme2dict(theme_1), theme2dict(theme_2)]})
 
     async def test_different_method(self, authed_cli):
         resp = await authed_cli.post("/quiz_accessor.list_themes")

@@ -1,6 +1,5 @@
 import typing
 
-from app.admin.views import AdminCurrentView
 from app.words_game.views import GameSessionView, PlayerView, CityView
 
 if typing.TYPE_CHECKING:

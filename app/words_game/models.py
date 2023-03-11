@@ -111,23 +111,3 @@ class GameSettings(MappedAsDataclass, DB):
                 session.add(cls._instance)
                 session.commit()
         return cls._instance
-
-
-# TODO: доделать в мидлварку создание настроек
-# from sqlalchemy.orm import Session
-#
-#
-# async def create_game_settings(session: Session):
-#     game_settings = GameSettings()
-#     session.create(game_settings)
-#
-# app = web.Application(middlewares=[create_game_settings])
-#
-# async def on_startup(app):
-#     app['db_session'] = get_session()
-#
-# async def on_cleanup(app):
-#     app['db_session'].close()
-#
-# app.on_startup.append(on_startup)
-# app.on_cleanup.append(on_cleanup)
