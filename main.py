@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     async def start_runner(run: AppRunner) -> None:
         await run.setup()
-        site = TCPSite(run, 8090)
+        site = TCPSite(run, port=8090)
         await site.start()
 
     async def handle_sigterm(*args):

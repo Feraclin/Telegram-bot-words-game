@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from messages import keyboards
+from .messages import keyboards
 
 import bson
 

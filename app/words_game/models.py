@@ -103,11 +103,13 @@ class GameSettings(MappedAsDataclass, DB):
     _instance = None
 
     @classmethod
-    def get_instance(cls, session):
+    def get_instance(cls, sessionmaker):
         if cls._instance is None:
-            cls._instance = session.query(cls).first()
-            if cls._instance is None:
-                cls._instance = cls()
-                session.add(cls._instance)
-                session.commit()
+            session = sessionmaker()
+            with session.begin() as session:
+                cls._instance = session.query(cls).first()
+                if cls._instance is None:
+                    cls._instance = cls()
+                    session.add(cls._instance)
+                    session.commit()
         return cls._instance
