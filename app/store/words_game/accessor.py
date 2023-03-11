@@ -62,7 +62,7 @@ class WGAccessor:
 
     async def get_session_by_id(
         self, user_id: int | None = None, chat_id: int | None = None, is_active: bool = True
-    ) -> tuple[int, int] | None:
+    ) -> GameSession | None:
         """
         Получение активной игровой сессии по id пользователя или id чата.
 
@@ -82,6 +82,8 @@ class WGAccessor:
         else:
             return None
         session_id = (await self.database.execute_query(query)).scalars().all()
+        if not session_id:
+            return None
         stmt = select(GameSession).where(GameSession.id == max(session_id))
         res = await self.database.execute_query(stmt)
         res = res.scalar()
@@ -328,11 +330,12 @@ class WGAccessor:
         )
         await self.database.execute_query(query)
 
-    async def get_team_by_game_id(self, game_session_id: int) -> list[int]:
+    async def get_team_by_game_id(self, game_session_id: int, player_id: int | None = None) -> list[int]:
         """
         Получение списка игроков, которые использовались в игре.
 
         :param game_session_id: id игровой сессии
+        :param player_id: id игрока
         :return: список игроков
         """
         query = (
@@ -340,13 +343,15 @@ class WGAccessor:
             .where(
                 UserGameSession.game_sessions_id == game_session_id,
                 UserGameSession.life > 0,
+                UserGameSession.player_id != player_id,
             )
             .group_by(UserGameSession.player_id)
         )
 
         res = await self.database.execute_query(query)
         team_lst = res.scalars().all()
-        return team_lst
+        print(res)
+        return team_lst if team_lst else [player_id, ]
 
     async def remove_life_from_player(self, game_id: int, player_id: int, round_: int = 0) -> None:
         """
@@ -452,7 +457,7 @@ class WGAccessor:
         res = await self.database.execute_query(query)
         return res.scalar_one()
 
-    async def get_player(self, player_id: int, game_session_id: int) -> UserGameSession:
+    async def get_player(self, player_id: int, game_session_id: int) -> UserGameSession | None:
         """
         Получение жизни игрока.
 

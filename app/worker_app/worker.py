@@ -301,7 +301,7 @@ class WordGameMixin(BaseMixin):
         """
         if game is None:
             return
-        team = await self.words_game.get_team_by_game_id(game_session_id=game.id)
+        team = await self.words_game.get_team_by_game_id(game_session_id=game.id, player_id=game.next_user_id)
         if len(team) == 0:
             await self.stop_game_group(game=game)
             return
@@ -344,7 +344,7 @@ class WordGameMixin(BaseMixin):
             "type_": "slow_player",
             "chat_id": game.chat_id,
             "user_id": player.player_id,
-            "round_": player.round_,
+            "round": player.round_,
             "game_id": game.id,
         }
 
@@ -616,7 +616,7 @@ class Worker(CityGameMixin, WordGameMixin):
                         return await message.ack()
                     player = await self.words_game.get_player(game_session_id=game.id, player_id=text["user_id"])
                     if game.current_poll_id is None and \
-                            game.next_user_id == text["user_id"] and player.round_ == text["round_"]:
+                            game.next_user_id == text["user_id"] and player.round_ == text["round"]:
                         await self.words_game.remove_life_from_player(
                             game_id=game.id, player_id=text["user_id"], round_=1
                         )
@@ -763,6 +763,10 @@ class Worker(CityGameMixin, WordGameMixin):
         :param game: Объект игры.
         :return:
         """
+        if game is None:
+            game = await self.words_game.get_session_by_id(
+                chat_id=upd.message.chat.id, is_active=True
+            )
         if game is None:
             game = await self.words_game.get_session_by_id(
                 chat_id=upd.message.chat.id, is_active=False
