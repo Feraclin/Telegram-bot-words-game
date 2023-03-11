@@ -60,28 +60,30 @@ class WGAccessor:
     database: "Database"
     logger: logging.Logger = logging.getLogger("words_game")
 
-    async def select_active_session_by_id(
-        self, user_id: int | None = None, chat_id: int | None = None
+    async def get_session_by_id(
+        self, user_id: int | None = None, chat_id: int | None = None, is_active: bool = True
     ) -> GameSession | None:
         """
         Получение активной игровой сессии по id пользователя или id чата.
 
         :param user_id: id пользователя
         :param chat_id: id чата
+        :param is_active: статус игровой сессии
         :return: активная игровая сессия
         """
         if user_id:
             query = select(GameSession).where(
-                GameSession.creator_id == user_id, GameSession.is_active == True
+                GameSession.creator_id == user_id, GameSession.is_active == is_active
             )
         elif chat_id:
             query = select(GameSession).where(
-                GameSession.chat_id == chat_id, GameSession.is_active == True
+                GameSession.chat_id == chat_id, GameSession.is_active == is_active
             )
         else:
             return None
         res = await self.database.execute_query(query)
-        return res.scalar()
+        res = res.scalars().all()
+        return res[-1] if res else None
 
     async def create_game_session(self, user_id: int, chat_id: int, chat_type: str) -> GameSession:
         """
@@ -447,3 +449,15 @@ class WGAccessor:
         query = select(GameSettings)
         res = await self.database.execute_query(query)
         return res.scalar_one()
+
+    async def get_player_life(self, player_id: int, game_session_id: int) -> int:
+        """
+        Получение жизни игрока.
+
+        :param player_id: id игрока
+        :param game_session_id: id игровой сессии
+        """
+        query = select(UserGameSession.life).where(UserGameSession.player_id == player_id,
+                                                   UserGameSession.game_sessions_id == game_session_id)
+        res = await self.database.execute_query(query)
+        return res.scalar()

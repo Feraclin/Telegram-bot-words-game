@@ -38,11 +38,17 @@ class BaseMixin:
         self.queue_name = "tg_bot"
         self.game_settings: GameSettings | None = None
 
+    async def statistics(self, upd: UpdateObj, game: GameSession | None = None) -> None:
+        raise NotImplementedError
+
 
 class CityGameMixin(BaseMixin):
     """
     Вариант игры в города для одного игрока
     """
+
+    async def statistics(self, upd: UpdateObj, game: GameSession | None = None) -> None:
+        pass
 
     async def start_game(self, upd: UpdateObj) -> None:
         """
@@ -51,7 +57,7 @@ class CityGameMixin(BaseMixin):
         :param upd:
         :return:
         """
-        if await self.words_game.select_active_session_by_id(upd.message.from_.id):
+        if await self.words_game.get_session_by_id(upd.message.from_.id):
             message_game_exist = {
                 "type_": "message",
                 "chat_id": upd.message.from_.id,
@@ -94,19 +100,9 @@ class CityGameMixin(BaseMixin):
         :param upd:
         :return:
         """
-        if game := await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id):
+        if game := await self.words_game.get_session_by_id(chat_id=upd.message.chat.id):
             await self.words_game.update_game_session(game_id=game.id, status=False)
-            cities = await self.words_game.get_city_list_by_session_id(game_session_id=game.id)
-
-            messages_played_city = {
-                "type_": "message",
-                "chat_id": upd.message.chat.id,
-                "text": f"В этой игре участвовали: {' - '.join(city.name for city in cities)}",
-            }
-
-            await self.rabbitMQ.send_event(
-                message=messages_played_city, routing_key=self.routing_key_sender
-            )
+            await self.statistics(upd, game=game)
 
     async def pick_city(
         self, user_id: int, chat_id: int, username: str, letter: str | None = None
@@ -121,7 +117,7 @@ class CityGameMixin(BaseMixin):
         :return:
         """
         self.logger.info(f"pick_city: {username} {letter}")
-        game = await self.words_game.select_active_session_by_id(user_id)
+        game = await self.words_game.get_session_by_id(user_id)
 
         city = await self.words_game.get_city_by_first_letter(
             letter=letter, game_session_id=game.id
@@ -163,7 +159,7 @@ class CityGameMixin(BaseMixin):
                 else:
                     letter_num -= 1
 
-            game = await self.words_game.select_active_session_by_id(upd.message.from_.id)
+            game = await self.words_game.get_session_by_id(upd.message.from_.id)
 
             if await self.words_game.check_city_in_used(city_id=city.id, game_session_id=game.id):
                 message_city_exist = {
@@ -239,6 +235,9 @@ class WordGameMixin(BaseMixin):
     Вариант игры в слова для команды
     """
 
+    async def statistics(self, upd: UpdateObj, game: GameSession | None = None) -> None:
+        pass
+
     async def chose_your_team(self, upd: UpdateObj) -> None:
         """
         Метод формирования игры в слова для команды и самой команды
@@ -246,7 +245,7 @@ class WordGameMixin(BaseMixin):
         :param upd:
         :return:
         """
-        if await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id):
+        if await self.words_game.get_session_by_id(chat_id=upd.message.chat.id):
             return
         async with asyncio.Lock():
             await self.words_game.create_game_session(
@@ -274,7 +273,7 @@ class WordGameMixin(BaseMixin):
         :param upd:
         :return:
         """
-        game = await self.words_game.select_active_session_by_id(
+        game = await self.words_game.get_session_by_id(
             chat_id=upd.callback_query.message.chat.id
         )
         if game:
@@ -303,17 +302,19 @@ class WordGameMixin(BaseMixin):
         :return:
         """
         team = await self.words_game.get_team_by_game_id(game_session_id=game.id)
-
-        if not team:
-            """
-            Если игроков нет в игре, то игра окончена
-            """
-            await self.words_game.update_game_session(game_id=game.id, status=False)
-            message_no_team = {"type_": "message", "chat_id": game.chat_id, "text": "Игорьков нет"}
-            await self.rabbitMQ.send_event(
-                message=message_no_team, routing_key=self.routing_key_sender
-            )
+        if len(team) == 0:
+            await self.stop_game_group(game=game)
             return
+        if len(team) == 1:
+            """
+            Если остался 1 игрок с 1 жизнью, то игра окончена
+            """
+            player = team[0]
+            player_life = await self.words_game.get_player_life(player_id=player,
+                                                                game_session_id=game.id)
+            if player_life == 1:
+                await self.stop_game_group(game=game)
+                return
 
         player = await self.words_game.select_user_by_id(choice(team) if not player else player)
 
@@ -357,7 +358,7 @@ class WordGameMixin(BaseMixin):
         :return:
         """
         word = upd.message.text.strip("/").capitalize()
-        game = await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
+        game = await self.words_game.get_session_by_id(chat_id=upd.message.chat.id)
         check = False
         if game.next_user_id != upd.message.from_.id:
             """
@@ -493,26 +494,22 @@ class WordGameMixin(BaseMixin):
 
         await self.rabbitMQ.send_event(message=poll_message, routing_key=self.routing_key_sender)
 
-    async def stop_game_group(self, upd):
+    async def stop_game_group(self, upd: UpdateObj | None = None, game: GameSession | None = None) -> None:
         """
         Метод остановки игры
 
-        :param upd:
+        :param upd: обновление сообщения
+        :param game: игра
         :return:
         """
-        game = await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
+        if not upd and not game:
+            return
+        if not game:
+            game = await self.words_game.get_session_by_id(chat_id=upd.message.chat.id)
         if not game:
             return
         await self.words_game.update_game_session(game_id=game.id, status=False)
-        team_lst = await self.words_game.get_player_list(game_session_id=game.id)
-
-        message_no_team = {
-            "type_": "message",
-            "chat_id": game.chat_id,
-            "text": f"Игра окончена. "
-            f"{' - '.join(f'@{player[0]} - {player[1]}' for player in team_lst)}",
-        }
-        await self.rabbitMQ.send_event(message=message_no_team, routing_key=self.routing_key_sender)
+        await self.statistics(upd=upd, game=game)
 
 
 class Worker(CityGameMixin, WordGameMixin):
@@ -553,6 +550,7 @@ class Worker(CityGameMixin, WordGameMixin):
     right_word: Метод для обработки правильного слова в игре в города.
     words_poll: Метод для обработки голосования за слово в игре в города.
     stop_game_group: Метод для остановки игры в города для группы игроков.
+    statistics: Метод для получения статистики игры.
     """
 
     async def setup_settings(self):
@@ -594,25 +592,24 @@ class Worker(CityGameMixin, WordGameMixin):
             text = bson.loads(message.body)
             match text["type_"]:
                 case "pick_leader":
-                    game = await self.words_game.select_active_session_by_id(
+                    game = await self.words_game.get_session_by_id(
                         chat_id=text["chat_id"]
                     )
                     await self.pick_leader(game=game)
                 case "poll_result":
-                    game = await self.words_game.select_active_session_by_id(
+                    game = await self.words_game.get_session_by_id(
                         chat_id=text["chat_id"]
                     )
-                    await self.words_game.update_game_session(
-                        game_id=game.id, poll_id=text["poll_id"]
-                    )
-                    if text["poll_result"] == "yes":
-                        await self.right_word(game=game, word=text["word"])
-                    else:
-                        await self.pick_leader(game=game)
+                    if game:
+                        await self.words_game.update_game_session(
+                            game_id=game.id, poll_id=text["poll_id"]
+                        )
+                        if text["poll_result"] == "yes":
+                            await self.right_word(game=game, word=text["word"])
+                        else:
+                            await self.pick_leader(game=game)
                 case "slow_player":
-                    print(text)
-                    game = await self.words_game.select_active_session_by_id(chat_id=text["chat_id"])
-                    print("slow_player", game)
+                    game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
                     if game and game.next_user_id == text["user_id"]:
                         await self.words_game.remove_life_from_player(
                             game_id=game.id, player_id=text["user_id"], round_=1
@@ -694,7 +691,7 @@ class Worker(CityGameMixin, WordGameMixin):
             :return:
             """
 
-            game = await self.words_game.select_active_session_by_id(
+            game = await self.words_game.get_session_by_id(
                 chat_id=upd.message.chat.id
             )
             message_last_letter = {
@@ -723,11 +720,13 @@ class Worker(CityGameMixin, WordGameMixin):
                     await handle_help(self, upd)
                 case "/last" if upd.message.chat.type == "private":
                     await handle_last(self, upd)
-                case _ if upd.message.chat.type != "private" and await self.words_game.select_active_session_by_id(
+                case "/stat":
+                    await self.statistics(upd=upd)
+                case _ if upd.message.chat.type != "private" and await self.words_game.get_session_by_id(
                         chat_id=upd.message.chat.id
                 ):
                     await self.check_word(upd=upd)
-                case _ if await self.words_game.select_active_session_by_id(
+                case _ if await self.words_game.get_session_by_id(
                         chat_id=upd.message.from_.id
                 ):
                     await self.check_city(upd=upd)
@@ -769,3 +768,36 @@ class Worker(CityGameMixin, WordGameMixin):
             t.cancel()
         await self.rabbitMQ.disconnect()
         await self.database.disconnect()
+
+    async def statistics(self, upd, game: GameSession | None = None):
+        """
+        Метод для вывода статистики игры.
+
+        :param upd: Объект обновления.
+        :param game: Объект игры.
+        :return:
+        """
+        if game is None:
+            game = await self.words_game.get_session_by_id(chat_id=upd.message.chat.id, is_active=False)
+        if game.game_type == "private":
+            cities = await self.words_game.get_city_list_by_session_id(game_session_id=game.id)
+
+            messages_played_city = {
+                "type_": "message",
+                "chat_id": game.chat_id,
+                "text": f"В этой игре участвовали: {' - '.join(city.name for city in cities)}",
+            }
+
+            await self.rabbitMQ.send_event(
+                message=messages_played_city, routing_key=self.routing_key_sender
+            )
+        elif game.game_type != "private":
+            team_lst = await self.words_game.get_player_list(game_session_id=game.id)
+
+            message_no_team = {
+                "type_": "message",
+                "chat_id": game.chat_id,
+                "text": f"Игра окончена. "
+                        f"{' - '.join(f'@{player[0]} - {player[1]}' for player in team_lst)}",
+            }
+            await self.rabbitMQ.send_event(message=message_no_team, routing_key=self.routing_key_sender)
