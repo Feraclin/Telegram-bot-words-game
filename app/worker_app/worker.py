@@ -6,9 +6,9 @@ import bson
 from aio_pika.abc import AbstractIncomingMessage
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
-from .constant import help_msg, GameSettings
+from .constant import help_msg
 from app.store.tg_api.schemes import UpdateObj
-from app.words_game.models import GameSession
+from app.words_game.models import GameSession, GameSettings
 
 from app.web.config import ConfigEnv
 from app.store.words_game.accessor import WGAccessor
@@ -560,7 +560,7 @@ class Worker(CityGameMixin, WordGameMixin):
         Инициализация настроек игры.
         :return:
         """
-        self.game_settings = GameSettings(**(await self.words_game.get_game_settings()).__dict__)
+        self.game_settings = await GameSettings.get_instance(self.database.session)
 
     async def _worker_rabbit(self):
         """
@@ -610,7 +610,9 @@ class Worker(CityGameMixin, WordGameMixin):
                     else:
                         await self.pick_leader(game=game)
                 case "slow_player":
-                    game = await self.words_game.select_active_session_by_id(text["chat_id"])
+                    print(text)
+                    game = await self.words_game.select_active_session_by_id(chat_id=text["chat_id"])
+                    print("slow_player", game)
                     if game and game.next_user_id == text["user_id"]:
                         await self.words_game.remove_life_from_player(
                             game_id=game.id, player_id=text["user_id"], round_=1
@@ -754,6 +756,7 @@ class Worker(CityGameMixin, WordGameMixin):
         """
         await self.database.connect()
         await self.rabbitMQ.connect()
+        await self.setup_settings()
         self._tasks = [
             asyncio.create_task(self._worker_rabbit()) for _ in range(self.concurrent_workers)
         ]
