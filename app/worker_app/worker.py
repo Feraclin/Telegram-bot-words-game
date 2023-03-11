@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from constant import help_msg, GameSettings
 from app.store.tg_api.schemes import UpdateObj
 from app.words_game.models import GameSession
+
 from app.web.config import ConfigEnv
 from app.store.words_game.accessor import WGAccessor
 from app.store.database.database import Database
@@ -16,45 +17,7 @@ from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 from app.store.yandex_dict_api.accessor import YandexDictAccessor
 
 
-class Worker:
-    """
-    Класс Worker для обработки логики игры и связи с внешними сервисами.
-
-    cfg: Объект конфигурации.
-    concurrent_workers: Количество одновременных рабочих процессов.
-    _tasks: Список задач для выполнения одновременно.
-    database: Объект базы данных для взаимодействия с базой данных игры.
-    words_game: Объект-аксессор для взаимодействия с сервисом Words Game.
-    rabbitMQ: Объект RabbitMQ для связи с другими сервисами.
-    yandex_dict: Объект-аксессор для взаимодействия с API Яндекс.Словаря.
-    logger: Объект логгера для записи событий.
-    routing_key_worker: Ключ маршрутизации для сообщений рабочего процесса.
-    routing_key_sender: Ключ маршрутизации для сообщений отправителя.
-    routing_key_poller: Ключ маршрутизации для сообщений опросника.
-    queue_name: Название очереди для прослушивания.
-    game_settings: Объект настроек игры.
-
-    Список методов для класса Worker:
-
-    setup_settings: Метод для настройки настроек игры.
-    handle_update: Метод для обработки входящих обновлений от Telegram.
-    on_message: Метод для обработки входящих сообщений от Telegram.
-    start: Метод для запуска рабочих процессов и подключения к базе данных и RabbitMQ.
-    stop: Метод для остановки рабочих процессов и отключения от RabbitMQ и базы данных.
-    start_game: Метод для запуска игры в города для одного игрока.
-    stop_game: Метод для остановки игры в города для одного игрока.
-    pick_city: Метод для выбора города игроком.
-    check_city: Метод для проверки города игроком.
-    bot_looser: Метод для обработки поражения бота в игре в города.
-    chose_your_team: Метод для выбора команды игроком.
-    add_to_team: Метод для добавления игрока в команду.
-    pick_leader: Метод для выбора лидера команды.
-    check_word: Метод для проверки слова игроком.
-    right_word: Метод для обработки правильного слова в игре в города.
-    words_poll: Метод для обработки голосования за слово в игре в города.
-    stop_game_group: Метод для остановки игры в города для группы игроков.
-    """
-
+class BaseMixin:
     def __init__(self, cfg: ConfigEnv, concurrent_workers: int = 1):
         self.cfg = cfg
         self._tasks = []
@@ -75,172 +38,11 @@ class Worker:
         self.queue_name = "tg_bot"
         self.game_settings: GameSettings | None = None
 
-    async def setup_settings(self):
-        """
-        Инициализация настроек игры.
-        :return:
-        """
-        self.game_settings = GameSettings(**(await self.words_game.get_game_settings()).__dict__)
 
-    async def handle_update(self, upd: UpdateObj):
-        """
-        Обработка сообщений.
-
-        :param upd: Объект обновления.
-        :return:
-        """
-        if upd.message:
-            try:
-                match upd.message.text:
-                    case "/play":
-                        if upd.message.chat.type == "private":
-                            message_start_game = {
-                                "type_": "message_keyboard",
-                                "chat_id": upd.message.chat.id,
-                                "text": "Будешь играть?",
-                                "keyboard": "start_keyboard",
-                            }
-                            await self.rabbitMQ.send_event(
-                                message=message_start_game, routing_key=self.routing_key_sender
-                            )
-                        else:
-                            await self.chose_your_team(upd)
-                    case "/yes" if upd.message.chat.type == "private":
-                        await self.start_game(upd=upd)
-                    case "/stop" if upd.message.chat.type == "private":
-                        await self.stop_game(upd=upd)
-                    case "/stop":
-                        await self.stop_game_group(upd=upd)
-                    case "/ping":
-                        message_ping = {
-                            "type_": "message",
-                            "chat_id": upd.message.chat.id,
-                            "text": "/pong",
-                        }
-
-                        await self.rabbitMQ.send_event(
-                            message=message_ping, routing_key=self.routing_key_sender
-                        )
-                    case "/help" if upd.message.chat.type != "private":
-                        message_help = {
-                            "type_": "message",
-                            "chat_id": upd.message.chat.id,
-                            "text": help_msg,
-                        }
-                        await self.rabbitMQ.send_event(
-                            message=message_help, routing_key=self.routing_key_sender
-                        )
-                    case "/last" if upd.message.chat.type == "private":
-                        game = await self.words_game.select_active_session_by_id(
-                            chat_id=upd.message.chat.id
-                        )
-                        message_last_letter = {
-                            "type_": "message",
-                            "chat_id": upd.message.chat.id,
-                            "text": f"Город на букву {game.next_start_letter}",
-                        }
-
-                        await self.rabbitMQ.send_event(
-                            message=message_last_letter, routing_key=self.routing_key_sender
-                        )
-
-                    case _ if upd.message.chat.type != "private" and await self.words_game.select_active_session_by_id(
-                        chat_id=upd.message.chat.id
-                    ):
-                        await self.check_word(upd=upd)
-
-                    case _ if await self.words_game.select_active_session_by_id(
-                        chat_id=upd.message.from_.id
-                    ):
-                        await self.check_city(upd=upd)
-            except IntegrityError as e:
-                self.logger.info(f"message {e}")
-        elif upd.callback_query:
-            try:
-                match upd.callback_query.data:
-                    case "/yes":
-                        await self.add_to_team(upd)
-                    case _:
-                        pass
-            except IntegrityError as e:
-                self.logger.info(f"callback {e}")
-
-    async def _worker_rabbit(self):
-        """
-        Метод для прослушивания событий RabbitMQ.
-        :return:
-        """
-        await self.rabbitMQ.listen_events(
-            on_message_func=self.on_message,
-            routing_key=[self.routing_key_worker, self.routing_key_poller],
-            queue_name=self.queue_name,
-        )
-
-    async def on_message(self, message: AbstractIncomingMessage):
-        """
-        Обработка сообщений из очереди RabbitMQ.
-
-        :param message:
-        :return:
-        """
-        if message.routing_key == "poller":
-            try:
-                upd = UpdateObj.Schema().load(bson.loads(message.body))
-
-            except ValidationError as e:
-                self.logger.info(f"validation {e}")
-                return
-            await self.handle_update(upd)
-        elif message.routing_key == self.routing_key_worker:
-            text = bson.loads(message.body)
-            match text["type_"]:
-                case "pick_leader":
-                    game = await self.words_game.select_active_session_by_id(
-                        chat_id=text["chat_id"]
-                    )
-                    await self.pick_leader(game=game)
-                case "poll_result":
-                    game = await self.words_game.select_active_session_by_id(
-                        chat_id=text["chat_id"]
-                    )
-                    await self.words_game.update_game_session(
-                        game_id=game.id, poll_id=text["poll_id"]
-                    )
-                    if text["poll_result"] == "yes":
-                        await self.right_word(game=game, word=text["word"])
-                    else:
-                        await self.pick_leader(game=game)
-                case "slow_player":
-                    game = await self.words_game.select_active_session_by_id(text["chat_id"])
-                    if game.next_user_id == text["user_id"]:
-                        await self.words_game.remove_life_from_player(
-                            game_id=game.id, player_id=text["user_id"], round_=1
-                        )
-                        await self.pick_leader(game=game)
-                case _:
-                    self.logger.info(f"unknown type {text['type_']}")
-        await message.ack()
-
-    async def start(self):
-        """
-        Метод start для запуска рабочих процессов и подключения к базе данных и RabbitMQ.
-        """
-        await self.database.connect()
-        await self.rabbitMQ.connect()
-        self._tasks = [
-            asyncio.create_task(self._worker_rabbit()) for _ in range(self.concurrent_workers)
-        ]
-
-    async def stop(self):
-        """
-        Метод stop для остановки рабочих процессов и отключения от базы данных и RabbitMQ.
-        """
-        for t in self._tasks:
-            t.cancel()
-        await self.rabbitMQ.disconnect()
-        await self.database.disconnect()
-
-    # Вариант игры в города для одного игрока
+class CityGameMixin(BaseMixin):
+    """
+    Вариант игры в города для одного игрока
+    """
 
     async def start_game(self, upd: UpdateObj) -> None:
         """
@@ -431,7 +233,11 @@ class Worker:
         message_loose = {"type_": "message", "chat_id": game.chat_id, "text": f"Увы, я проиграл"}
         await self.rabbitMQ.send_event(message=message_loose, routing_key=self.routing_key_sender)
 
-    # Вариант игры в слова для команды
+
+class WordGameMixin(BaseMixin):
+    """
+    Вариант игры в слова для команды
+    """
 
     async def chose_your_team(self, upd: UpdateObj) -> None:
         """
@@ -707,3 +513,256 @@ class Worker:
             f"{' - '.join(f'@{player[0]} - {player[1]}' for player in team_lst)}",
         }
         await self.rabbitMQ.send_event(message=message_no_team, routing_key=self.routing_key_sender)
+
+
+class Worker(CityGameMixin, WordGameMixin):
+    """
+    Класс Worker для обработки логики игры и связи с внешними сервисами.
+
+    cfg: Объект конфигурации.
+    concurrent_workers: Количество одновременных рабочих процессов.
+    _tasks: Список задач для выполнения одновременно.
+    database: Объект базы данных для взаимодействия с базой данных игры.
+    words_game: Объект-аксессор для взаимодействия с сервисом Words Game.
+    rabbitMQ: Объект RabbitMQ для связи с другими сервисами.
+    yandex_dict: Объект-аксессор для взаимодействия с API Яндекс.Словаря.
+    logger: Объект логгера для записи событий.
+    routing_key_worker: Ключ маршрутизации для сообщений рабочего процесса.
+    routing_key_sender: Ключ маршрутизации для сообщений отправителя.
+    routing_key_poller: Ключ маршрутизации для сообщений опросника.
+    queue_name: Название очереди для прослушивания.
+    game_settings: Объект настроек игры.
+
+    Список методов для класса Worker:
+
+    setup_settings: Метод для настройки настроек игры.
+    handle_update: Метод для обработки входящих сообщений Telegram.
+    handle_callback: Метод для обработки входящих callback от Telegram.
+    on_message: Метод для обработки входящих сообщений от Telegram.
+    start: Метод для запуска рабочих процессов и подключения к базе данных и RabbitMQ.
+    stop: Метод для остановки рабочих процессов и отключения от RabbitMQ и базы данных.
+    start_game: Метод для запуска игры в города для одного игрока.
+    stop_game: Метод для остановки игры в города для одного игрока.
+    pick_city: Метод для выбора города игроком.
+    check_city: Метод для проверки города игроком.
+    bot_looser: Метод для обработки поражения бота в игре в города.
+    chose_your_team: Метод для выбора команды игроком.
+    add_to_team: Метод для добавления игрока в команду.
+    pick_leader: Метод для выбора лидера команды.
+    check_word: Метод для проверки слова игроком.
+    right_word: Метод для обработки правильного слова в игре в города.
+    words_poll: Метод для обработки голосования за слово в игре в города.
+    stop_game_group: Метод для остановки игры в города для группы игроков.
+    """
+
+    async def setup_settings(self):
+        """
+        Инициализация настроек игры.
+        :return:
+        """
+        self.game_settings = GameSettings(**(await self.words_game.get_game_settings()).__dict__)
+
+    async def _worker_rabbit(self):
+        """
+        Метод для прослушивания событий RabbitMQ.
+        :return:
+        """
+        await self.rabbitMQ.listen_events(
+            on_message_func=self.on_message,
+            routing_key=[self.routing_key_worker, self.routing_key_poller],
+            queue_name=self.queue_name,
+        )
+
+    async def on_message(self, message: AbstractIncomingMessage):
+        """
+        Обработка сообщений из очереди RabbitMQ.
+
+        :param message:
+        :return:
+        """
+        if message.routing_key == "poller":
+            try:
+                upd = UpdateObj.Schema().load(bson.loads(message.body))
+            except ValidationError as e:
+                self.logger.info(f"validation {e}")
+                return
+            if upd.message:
+                await self.handle_message(upd)
+            elif upd.callback_query:
+                await self.handle_callback_query(upd)
+        elif message.routing_key == self.routing_key_worker:
+            text = bson.loads(message.body)
+            match text["type_"]:
+                case "pick_leader":
+                    game = await self.words_game.select_active_session_by_id(
+                        chat_id=text["chat_id"]
+                    )
+                    await self.pick_leader(game=game)
+                case "poll_result":
+                    game = await self.words_game.select_active_session_by_id(
+                        chat_id=text["chat_id"]
+                    )
+                    await self.words_game.update_game_session(
+                        game_id=game.id, poll_id=text["poll_id"]
+                    )
+                    if text["poll_result"] == "yes":
+                        await self.right_word(game=game, word=text["word"])
+                    else:
+                        await self.pick_leader(game=game)
+                case "slow_player":
+                    game = await self.words_game.select_active_session_by_id(text["chat_id"])
+                    if game and game.next_user_id == text["user_id"]:
+                        await self.words_game.remove_life_from_player(
+                            game_id=game.id, player_id=text["user_id"], round_=1
+                        )
+                        await self.pick_leader(game=game)
+                case _:
+                    self.logger.info(f"unknown type {text['type_']}")
+        await message.ack()
+
+    async def handle_message(self, upd: UpdateObj):
+        """
+        Обработка сообщений.
+
+        :param upd: Объект обновления.
+        :return:
+        """
+
+        async def handle_play(self, upd: UpdateObj):
+            """
+            Обработка команды /play.
+
+            :param self: Экземпляр класса.
+            :param upd: Объект обновления.
+            :return:
+            """
+            if upd.message.chat.type == "private":
+                message_start_game = {
+                    "type_": "message_keyboard",
+                    "chat_id": upd.message.chat.id,
+                    "text": "Будешь играть?",
+                    "keyboard": "start_keyboard",
+                }
+                await self.rabbitMQ.send_event(
+                    message=message_start_game, routing_key=self.routing_key_sender
+                )
+            else:
+                await self.chose_your_team(upd)
+
+        async def handle_ping(self, upd: UpdateObj):
+            """ Обработка команды /ping.
+
+            :param self: Экземпляр класса.
+            :param upd: Объект обновления.
+            :return:
+            """
+
+            message_ping = {
+                "type_": "message",
+                "chat_id": upd.message.chat.id,
+                "text": "/pong",
+            }
+
+            await self.rabbitMQ.send_event(
+                message=message_ping, routing_key=self.routing_key_sender
+            )
+
+        async def handle_help(self, upd: UpdateObj):
+            """ Обработка команды /help.
+
+            :param self: Экземпляр класса.
+            :param upd: Объект обновления.
+            :return:
+            """
+
+            message_help = {
+                "type_": "message",
+                "chat_id": upd.message.chat.id,
+                "text": help_msg,
+            }
+            await self.rabbitMQ.send_event(
+                message=message_help, routing_key=self.routing_key_sender
+            )
+
+        async def handle_last(self, upd: UpdateObj):
+            """ Обработка команды /last.
+
+            :param self: Экземпляр класса.
+            :param upd: Объект обновления.
+            :return:
+            """
+
+            game = await self.words_game.select_active_session_by_id(
+                chat_id=upd.message.chat.id
+            )
+            message_last_letter = {
+                "type_": "message",
+                "chat_id": upd.message.chat.id,
+                "text": f"Город на букву {game.next_start_letter}",
+            }
+
+            await self.rabbitMQ.send_event(
+                message=message_last_letter, routing_key=self.routing_key_sender
+            )
+
+        try:
+            match upd.message.text:
+                case "/play":
+                    await handle_play(self, upd)
+                case "/yes" if upd.message.chat.type == "private":
+                    await self.start_game(upd=upd)
+                case "/stop" if upd.message.chat.type == "private":
+                    await self.stop_game(upd=upd)
+                case "/stop":
+                    await self.stop_game_group(upd=upd)
+                case "/ping":
+                    await handle_ping(self, upd)
+                case "/help" if upd.message.chat.type != "private":
+                    await handle_help(self, upd)
+                case "/last" if upd.message.chat.type == "private":
+                    await handle_last(self, upd)
+                case _ if upd.message.chat.type != "private" and await self.words_game.select_active_session_by_id(
+                        chat_id=upd.message.chat.id
+                ):
+                    await self.check_word(upd=upd)
+                case _ if await self.words_game.select_active_session_by_id(
+                        chat_id=upd.message.from_.id
+                ):
+                    await self.check_city(upd=upd)
+        except IntegrityError as e:
+            self.logger.info(f"message {e}")
+
+    async def handle_callback_query(self, upd: UpdateObj):
+        """
+        Обработка callback-запросов.
+
+        :param upd: Объект обновления.
+        :return:
+        """
+        try:
+            match upd.callback_query.data:
+                case "/yes":
+                    await self.add_to_team(upd)
+                case _:
+                    pass
+        except IntegrityError as e:
+            self.logger.info(f"callback {e}")
+
+    async def start(self):
+        """
+        Метод start для запуска рабочих процессов и подключения к базе данных и RabbitMQ.
+        """
+        await self.database.connect()
+        await self.rabbitMQ.connect()
+        self._tasks = [
+            asyncio.create_task(self._worker_rabbit()) for _ in range(self.concurrent_workers)
+        ]
+
+    async def stop(self):
+        """
+        Метод stop для остановки рабочих процессов и отключения от базы данных и RabbitMQ.
+        """
+        for t in self._tasks:
+            t.cancel()
+        await self.rabbitMQ.disconnect()
+        await self.database.disconnect()
