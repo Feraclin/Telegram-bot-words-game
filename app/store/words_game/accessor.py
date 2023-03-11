@@ -62,7 +62,7 @@ class WGAccessor:
 
     async def get_session_by_id(
         self, user_id: int | None = None, chat_id: int | None = None, is_active: bool = True
-    ) -> GameSession | None:
+    ) -> tuple[int, int] | None:
         """
         Получение активной игровой сессии по id пользователя или id чата.
 
@@ -72,18 +72,20 @@ class WGAccessor:
         :return: активная игровая сессия
         """
         if user_id:
-            query = select(GameSession).where(
-                GameSession.creator_id == user_id, GameSession.is_active == is_active
+            query = select(GameSession.id).where(
+                GameSession.chat_id == user_id, GameSession.is_active == is_active
             )
         elif chat_id:
-            query = select(GameSession).where(
+            query = select(GameSession.id).where(
                 GameSession.chat_id == chat_id, GameSession.is_active == is_active
             )
         else:
             return None
-        res = await self.database.execute_query(query)
-        res = res.scalars().all()
-        return res[-1] if res else None
+        session_id = (await self.database.execute_query(query)).scalars().all()
+        stmt = select(GameSession).where(GameSession.id == max(session_id))
+        res = await self.database.execute_query(stmt)
+        res = res.scalar()
+        return res if res else None
 
     async def create_game_session(self, user_id: int, chat_id: int, chat_type: str) -> GameSession:
         """
@@ -127,7 +129,7 @@ class WGAccessor:
                 is_active=status,
                 next_start_letter=next_letter if next_letter else GameSession.next_start_letter,
                 words=words if words else GameSession.words,
-                current_poll_id=poll_id if poll_id else GameSession.current_poll_id,
+                current_poll_id=poll_id,
                 next_user_id=next_user_id if next_user_id else GameSession.next_user_id,
             )
             .returning(GameSession)
@@ -450,14 +452,14 @@ class WGAccessor:
         res = await self.database.execute_query(query)
         return res.scalar_one()
 
-    async def get_player_life(self, player_id: int, game_session_id: int) -> int:
+    async def get_player(self, player_id: int, game_session_id: int) -> UserGameSession:
         """
         Получение жизни игрока.
 
         :param player_id: id игрока
         :param game_session_id: id игровой сессии
         """
-        query = select(UserGameSession.life).where(
+        query = select(UserGameSession).where(
             UserGameSession.player_id == player_id,
             UserGameSession.game_sessions_id == game_session_id,
         )

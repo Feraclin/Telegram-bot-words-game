@@ -299,6 +299,8 @@ class WordGameMixin(BaseMixin):
         :param player:
         :return:
         """
+        if game is None:
+            return
         team = await self.words_game.get_team_by_game_id(game_session_id=game.id)
         if len(team) == 0:
             await self.stop_game_group(game=game)
@@ -308,7 +310,7 @@ class WordGameMixin(BaseMixin):
             Если остался 1 игрок с 1 жизнью, то игра окончена
             """
             player = team[0]
-            player_life = await self.words_game.get_player_life(
+            player_life = await self.words_game.get_player(
                 player_id=player, game_session_id=game.id
             )
             if player_life == 1:
@@ -336,11 +338,14 @@ class WordGameMixin(BaseMixin):
         await self.rabbitMQ.send_event(
             message=message_say_word, routing_key=self.routing_key_sender
         )
-
+        player = await self.words_game.get_player(player_id=player.id,
+                                                  game_session_id=game.id)
         message_slow_player = {
             "type_": "slow_player",
             "chat_id": game.chat_id,
-            "user_id": player.id,
+            "user_id": player.player_id,
+            "round_": player.round_,
+            "game_id": game.id,
         }
 
         await self.rabbitMQ.send_event(
@@ -599,7 +604,7 @@ class Worker(CityGameMixin, WordGameMixin):
                     game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
                     if game:
                         await self.words_game.update_game_session(
-                            game_id=game.id, poll_id=text["poll_id"]
+                            game_id=game.id, poll_id=None
                         )
                         if text["poll_result"] == "yes":
                             await self.right_word(game=game, word=text["word"])
@@ -607,11 +612,20 @@ class Worker(CityGameMixin, WordGameMixin):
                             await self.pick_leader(game=game)
                 case "slow_player":
                     game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
-                    if game and game.next_user_id == text["user_id"]:
+                    if game is None:
+                        return await message.ack()
+                    player = await self.words_game.get_player(game_session_id=game.id, player_id=text["user_id"])
+                    if game.current_poll_id is None and \
+                            game.next_user_id == text["user_id"] and player.round_ == text["round_"]:
                         await self.words_game.remove_life_from_player(
                             game_id=game.id, player_id=text["user_id"], round_=1
                         )
                         await self.pick_leader(game=game)
+                case "poll_id":
+                    game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
+                    if game:
+                        await self.words_game.update_game_session(
+                            game_id=game.id, poll_id=text["poll_id"])
                 case _:
                     self.logger.info(f"unknown type {text['type_']}")
         await message.ack()
