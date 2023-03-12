@@ -230,7 +230,7 @@ class CityGameMixin(BaseMixin):
         :return:
         """
         game = await self.words_game.update_game_session(game_id=game_session_id, status=False)
-        message_loose = {"type_": "message", "chat_id": game.chat_id, "text": f"Увы, я проиграл"}
+        message_loose = {"type_": "message", "chat_id": game.chat_id, "text": "Увы, я проиграл"}
         await self.rabbitMQ.send_event(message=message_loose, routing_key=self.routing_key_sender)
 
 
@@ -258,7 +258,7 @@ class WordGameMixin(BaseMixin):
         message_create_team = {
             "type_": "message_keyboard",
             "chat_id": upd.message.chat.id,
-            "text": f"Будешь играть в игру?",
+            "text": "Будешь играть в игру?",
             "keyboard": "keyboard_team",
             "live_time": 5,
         }
@@ -650,7 +650,7 @@ class Worker(CityGameMixin, WordGameMixin):
                 await self.chose_your_team(upd)
 
         async def handle_ping(self, upd: UpdateObj):
-            """ Обработка команды /ping.
+            """Обработка команды /ping.
 
             :param self: Экземпляр класса.
             :param upd: Объект обновления.
@@ -668,7 +668,7 @@ class Worker(CityGameMixin, WordGameMixin):
             )
 
         async def handle_help(self, upd: UpdateObj):
-            """ Обработка команды /help.
+            """Обработка команды /help.
 
             :param self: Экземпляр класса.
             :param upd: Объект обновления.
@@ -685,16 +685,14 @@ class Worker(CityGameMixin, WordGameMixin):
             )
 
         async def handle_last(self, upd: UpdateObj):
-            """ Обработка команды /last.
+            """Обработка команды /last.
 
             :param self: Экземпляр класса.
             :param upd: Объект обновления.
             :return:
             """
 
-            game = await self.words_game.select_active_session_by_id(
-                chat_id=upd.message.chat.id
-            )
+            game = await self.words_game.select_active_session_by_id(chat_id=upd.message.chat.id)
             message_last_letter = {
                 "type_": "message",
                 "chat_id": upd.message.chat.id,
@@ -722,11 +720,11 @@ class Worker(CityGameMixin, WordGameMixin):
                 case "/last" if upd.message.chat.type == "private":
                     await handle_last(self, upd)
                 case _ if upd.message.chat.type != "private" and await self.words_game.select_active_session_by_id(
-                        chat_id=upd.message.chat.id
+                    chat_id=upd.message.chat.id
                 ):
                     await self.check_word(upd=upd)
                 case _ if await self.words_game.select_active_session_by_id(
-                        chat_id=upd.message.from_.id
+                    chat_id=upd.message.from_.id
                 ):
                     await self.check_city(upd=upd)
         except IntegrityError as e:

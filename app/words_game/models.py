@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
 
-from app.store.database.sqlalchemy_base import DB, bigint, list_str
+from app.store.database.sqlalchemy_base import DB, bigint
 
 
 class User(MappedAsDataclass, DB):
