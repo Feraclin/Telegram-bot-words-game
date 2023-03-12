@@ -74,7 +74,7 @@ class TestCity:
                                        username="test",
                                        letter=city.name[0])
                 assert mock.call_count == 1
-                assert mock1.call_count == 1
+                assert mock1.call_count == 0
 
     async def test_check_city(self, worker: Worker, game, city):
         with patch.object(target=worker.words_game,

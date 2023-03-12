@@ -86,6 +86,9 @@ def poll_answer():
 def get_updates_response(update_obj):
     return GetUpdatesResponse(ok=True, result=[update_obj])
 
+@pytest.fixture
+def get_updates_response_dict(update_obj):
+    return GetUpdatesResponse.Schema().dump(GetUpdatesResponse(ok=True, result=[update_obj]))
 
 def test_get_updates_response(get_updates_response):
 

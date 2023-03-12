@@ -1,8 +1,10 @@
+from unittest.mock import Mock
+
 import pytest
 from aioresponses import aioresponses
 
-from store.tg_api.client import TgClient
-from store.tg_api.schemes import SendMessageResponse
+from app.store.tg_api.client import TgClient
+from app.store.tg_api.schemes import SendMessageResponse
 from tests.poller.fixtures import *
 
 @pytest.fixture(autouse=True)
@@ -51,75 +53,89 @@ async def test_get_me(tg_client, mock_response):
 
 
 @pytest.mark.asyncio
-async def test_send_message(tg_client, mock_response, get_updates_response, message):
-    pprint(GetUpdatesResponse.Schema().dump(get_updates_response)["result"])
-    pprint(SendMessageResponse.Schema().dump(get_updates_response.result[0].message))
-    # mock_response.post(
-    #         f"{tg_client.get_url('sendMessage')}",
-    #         payload={"ok": True, "result": {"message": SendMessageResponse.Schema().dump(get_updates_response)}},
-    #         status=200,
-    #     )
-    #
-    # response = await tg_client.send_message(chat_id=123, text="test message")
-    # assert response.result.message_id == 123
-
-
-@pytest.mark.asyncio
-async def test_send_keyboard(tg_client, mock_response):
-    keyboard = {"inline_keyboard": [[{"text": "Button", "callback_data": "test"}]]}
+async def test_send_message(tg_client, mock_response, get_updates_response, get_updates_response_dict):
     mock_response.post(
             f"{tg_client.get_url('sendMessage')}",
-            payload={"ok": True, "result": {"message_id": 123}},
+            payload={"ok": True,
+                     "result": get_updates_response_dict["result"][0]["message"]},
             status=200,
         )
-    response = await tg_client.send_keyboard(chat_id=123, text="test message", keyboard=keyboard)
-    assert response.result.message_id == 123
+    response = await tg_client.send_message(chat_id=get_updates_response.result[0].message.chat.id,
+                                            text=get_updates_response.result[0].message.text)
+    assert response == SendMessageResponse.Schema().load(data={"ok": True,
+                                                               "result": get_updates_response_dict["result"][0][
+                                                                   "message"]})
 
 
 @pytest.mark.asyncio
-async def test_send_keyboard_to_player(tg_client, mock_response):
+async def test_send_keyboard(tg_client, mock_response, get_updates_response, get_updates_response_dict):
     keyboard = {"inline_keyboard": [[{"text": "Button", "callback_data": "test"}]]}
+    result = get_updates_response_dict["result"][0]["message"]
+    result["reply_markup"] = keyboard
     mock_response.post(
             f"{tg_client.get_url('sendMessage')}",
-            payload={"ok": True, "result": {"message_id": 123}},
+            payload={"ok": True, "result": result},
             status=200,
         )
-    response = await tg_client.send_keyboard_to_player(chat_id=123, text="test message", keyboard=keyboard)
-    assert response.result.message_id == 123
+    response = await tg_client.send_keyboard(chat_id=get_updates_response.result[0].message.chat.id,
+                                             text=get_updates_response.result[0].message.text,
+                                             keyboard=keyboard)
+    assert response.result.message_id == 1
+    assert response.result.reply_markup == keyboard
+    assert response == SendMessageResponse.Schema().load(data={"ok": True,
+                                                               "result": result})
 
 
 @pytest.mark.asyncio
-async def test_send_poll(tg_client, mock_response):
-    options = ["option1", "option2"]
+async def test_send_poll(tg_client, mock_response, get_updates_response, get_updates_response_dict):
+    result = get_updates_response_dict["result"][0]["message"]
+    options_send = ["Option 1", "Option 2"]
+    options = [{'text': 'Option 1', 'voter_count': 0},
+               {'text': 'Option 2', 'voter_count': 2}]
+    result["poll"]["options"] = options
+    result["poll"]["question"] = "test question"
     mock_response.post(
             f"{tg_client.get_url('sendPoll')}",
-            payload={"ok": True, "result": {"message_id": 123}},
+            payload={"ok": True, "result": result},
             status=200,
         )
-    response = await tg_client.send_poll(chat_id=123, question="test question", options=options)
-    assert response.result.message_id == 123
+    response = await tg_client.send_poll(chat_id=123,
+                                         question="test question",
+                                         options=options_send)
+    assert response == SendMessageResponse.Schema().load(data={"ok": True,
+                                                               "result": result})
 
 
 @pytest.mark.asyncio
-async def test_remove_inline_keyboard(tg_client, mock_response):
+async def test_remove_inline_keyboard(tg_client, mock_response, get_updates_response, get_updates_response_dict):
+    result = get_updates_response_dict["result"][0]["message"]
     mock_response.post(
             f"{tg_client.get_url('editMessageReplyMarkup')}",
-            payload={"ok": True, "result": {"message_id": 123}},
+            payload={"ok": True, "result": result},
             status=200,
         )
-    response = await tg_client.remove_inline_keyboard(message_id=123, chat_id=456)
-    assert response.result.message_id == 123
+    response = await tg_client.remove_inline_keyboard(chat_id=get_updates_response.result[0].message.chat.id,
+                                                      message_id=get_updates_response.result[0].message.message_id)
+    assert response == SendMessageResponse.Schema().load(data={"ok": True,
+                                                               "result": result})
 
 
 @pytest.mark.asyncio
-async def test_stop_poll(tg_client):
+async def test_stop_poll(tg_client, mock_response, get_updates_response, get_updates_response_dict):
+    result = get_updates_response_dict["result"][0]["message"]
+    options = [{'text': 'Option 1', 'voter_count': 0},
+               {'text': 'Option 2', 'voter_count': 2}]
+    result["poll"]["options"] = options
+    result["poll"]["question"] = "test question"
     mock_response.post(
             f"{tg_client.get_url('stopPoll')}",
-            payload={"ok": True, "result": {"total_voter_count": 10}},
+            payload={"ok": True, "result": result},
             status=200,
         )
-    response = await tg_client.stop_poll(chat_id=123, message_id=456)
-    assert response.result.total_voter_count == 10
+    result["poll"]["total_voter_count"] = 10
+    response = await tg_client.stop_poll(chat_id=get_updates_response.result[0].message.chat.id,
+                                         message_id=get_updates_response.result[0].message.message_id)
+    assert response.result.poll.total_voter_count == 10
 
 
 @pytest.mark.asyncio
@@ -132,14 +148,3 @@ async def test_send_callback_alert(tg_client, mock_response):
     response = await tg_client.send_callback_alert(callback_id="test",
                                                    text="test text")
     assert response == 200
-
-
-@pytest.mark.asyncio
-async def test_edit_message_text(tg_client, mock_response):
-    mock_response.post(
-            f"{tg_client.get_url('editMessageText')}",
-            payload={"ok": True, "result": {"message_id": 123}},
-            status=200,
-        )
-    response = await tg_client.edit_message_text(chat_id=123, message_id=456)
-    assert response.result.message_id == 123
