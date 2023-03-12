@@ -7,7 +7,7 @@ from aioresponses import aioresponses
 from sqlalchemy import event, URL, create_engine
 from sqlalchemy.orm import sessionmaker, Session, scoped_session
 
-from app.sender.sender import Sender
+from app.sender_app.sender import Sender
 from app.web.config import config as cfg
 from app.words_game.models import GameSession, User, City
 from app.worker_app.worker import Worker

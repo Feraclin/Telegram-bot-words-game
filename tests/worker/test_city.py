@@ -115,7 +115,7 @@ class TestCity:
 
 class TestWorker:
     async def test_on_message_poller(self, worker: Worker, mocker, update_obj):
-        mock_handle_update = mocker.patch.object(target=worker, attribute="handle_update")
+        mock_handle_update = mocker.patch.object(target=worker, attribute="handle_message")
         message = IncomingMessage(
             body=bson.dumps(UpdateObj.Schema().dump(update_obj)),
             routing_key="poller"

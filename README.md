@@ -15,7 +15,7 @@ main.py общая точка входа для Poller, Worker и Aiohttp
 
 ### тестовое покрытие
 
-+ poetry run pytest --cov=app --cov-report=html
++ poetry run pytest --cov=app --cov-report=html --ignore=main*
 
 ### aiohttp-devtools
 

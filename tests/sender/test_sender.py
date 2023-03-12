@@ -4,9 +4,9 @@ from unittest.mock import patch, MagicMock, Mock, AsyncMock
 import bson
 import pytest
 
-from app.sender.messages import keyboards
-from app.sender.sender import Sender
-from app.web.config import ConfigEnv, config as cfg
+from app.sender_app.messages import keyboards
+from app.sender_app.sender import Sender
+from app.web.config import config as cfg
 
 
 @pytest.fixture
@@ -41,6 +41,7 @@ async def test_start_stop(sender):
         assert mock_connect.called
         assert len(sender._tasks) == sender.concurrent_workers
         await sender.stop()
+        await asyncio.sleep(0.1)
         assert all(task_.cancelled() for task_ in sender._tasks)
         assert mock_disconnect.called
 
@@ -96,7 +97,7 @@ async def test_send_poll(sender):
     question = "Test poll question"
     options = ["Option 1", "Option 2", "Option 3"]
     anonymous = True
-    message = {"type_": "send_poll", "chat_id": chat_id, "question": question, "options": options, "anonymous": anonymous}
+    message = {"type_": "send_poll", "chat_id": chat_id, "question": question, "options": options, "anonymous": anonymous, "period": 10}
     with patch.object(sender.tg_client, 'send_poll') as mock_send:
         with patch.object(sender.rabbitMQ, 'send_event') as mock_send_event:
             await sender.handle_update(message)
