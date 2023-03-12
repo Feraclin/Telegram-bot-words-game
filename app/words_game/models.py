@@ -90,3 +90,26 @@ class WordsInGame(MappedAsDataclass, DB):
         GameSession, backref="words_in_game", lazy="joined"
     )
     word: Mapped[Words] = relationship(Words, backref="words_in_game", lazy="joined")
+
+
+class GameSettings(MappedAsDataclass, DB):
+    __tablename__ = "game_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    response_time: Mapped[int] = mapped_column(nullable=False, default=15)
+    anonymous_poll: Mapped[bool] = mapped_column(nullable=False, default=True)
+    poll_time: Mapped[int] = mapped_column(nullable=False, default=15)
+
+    _instance = None
+
+    @classmethod
+    def get_instance(cls, sessionmaker):
+        if cls._instance is None:
+            session = sessionmaker()
+            with session.begin() as session:
+                cls._instance = session.query(cls).first()
+                if cls._instance is None:
+                    cls._instance = cls()
+                    session.add(cls._instance)
+                    session.commit()
+        return cls._instance

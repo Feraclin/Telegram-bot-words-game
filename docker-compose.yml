@@ -1,11 +1,11 @@
-version: '3.3'
+version: '3.5'
 
 services:
   db:
     image: postgres
     restart: always
     env_file:
-      - ./.env
+      - .env_dev
     ports:
       - '5434:5432'
     volumes:
@@ -25,12 +25,67 @@ services:
   rabbitmq:
     image: heidiks/rabbitmq-delayed-message-exchange:latest
     restart: always
-    environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=password
+    env_file:
+      - .env_dev
     ports:
       - "5673:5672"
       - "15673:15672"
+    networks:
+      - kts_st_week3
+
+
+  poller_app:
+    build:
+      context: .
+      dockerfile: ./compose/poller/Dockerfile
+    restart: always
+    env_file:
+      - .env_dev
+    command: bash -c "cd /code/app/poller_app/ && python main.py"
+    depends_on:
+      - db
+      - rabbitmq
+    networks:
+      - kts_st_week3
+
+  worker_app:
+    build:
+      context: .
+      dockerfile: ./compose/worker/Dockerfile
+    restart: always
+    env_file:
+      - .env_dev
+    command: bash -c "cd /code/app/worker_app/ && python main.py"
+    depends_on:
+      - poller_app
+    networks:
+      - kts_st_week3
+
+  sender_app:
+    build:
+      context: .
+      dockerfile: ./compose/sender/Dockerfile
+    command: bash -c "cd /code/app/sender_app/ && python main.py"
+    depends_on:
+      - worker_app
+    env_file:
+      - .env_dev
+    networks:
+      - kts_st_week3
+
+  aiohttp_app:
+    build:
+      context: .
+      dockerfile: ./compose/aiohttp_web/Dockerfile
+    restart: always
+    env_file:
+      - .env_dev
+    command: bash -c "alembic upgrade head && python aiohttp_app_main.py"
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "8080:8080"
     networks:
       - kts_st_week3
 

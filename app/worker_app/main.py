@@ -1,10 +1,10 @@
 import asyncio
 
 from app.web.config import config
-from app.worker_app.worker import Worker
-
+from worker import Worker
 
 if __name__ == "__main__":
+
     worker = Worker(cfg=config)
 
     loop = asyncio.new_event_loop()

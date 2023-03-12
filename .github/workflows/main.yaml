@@ -1,45 +1,26 @@
-name: Check homework
+name: Deploy to vps
 on: [workflow_dispatch]
 jobs:
-  runner-job:
-    runs-on: ubuntu-latest
-    env:
-      IMAGE: 'ktshub/backend-summer-2021:task-9676ecaf-e2a4-473a-803f-df790da37aaa'
-      CONFIGPATH: /go/code/source/old_tests/config.yml
-      PYTHONPATH: /go/code/source
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_PASSWORD: kts_pass
-          POSTGRES_USER: kts_user
-          POSTGRES_DB: kts
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-            python-version: 3.11
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        steps:
 
-      - name: Install dependencies
-        run: pip install poetry && poetry install
-#        run: pip install -r requirements.txt
+          - uses: actions/checkout@v1
 
-      - name: update pythonpath
-        run: echo "PYTHONPATH=$PYTHONPATH:/home/runner/work/hw-backend-summer-2022-3-sqlalchemy/hw-backend-summer-2022-3-sqlalchemy" >> $GITHUB_ENV
 
-      - name: set CONFIGPATH
-        run: echo "CONFIGPATH=/home/runner/work/hw-backend-summer-2022-3-sqlalchemy/hw-backend-summer-2022-3-sqlalchemy/old_tests/config.yml" >> $GITHUB_ENV
-
-      - name: handle migrations
-        run:  poetry run alembic upgrade head
-
-      - run: docker run --entrypoint /bin/bash -e GITHUB_REPOSITORY -e GITHUB_REF -e CONFIGPATH=${{ env.CONFIGPATH }} -e PYTHONPATH=${{ env.PYTHONPATH }} --network host --mount src="$(pwd)",target=/go/code/source,type=bind ${{ env.IMAGE }} -c "mv build/main source && ls -lah && cd source && ./main"
-
+          - name: Deploy package
+            uses: appleboy/ssh-action@master
+            with:
+              host: ${{ secrets.VPS_HOST }}
+              port: 22
+              username: ${{ secrets.USER_VPS }}
+              password: ${{ secrets.USER_PWD }}
+              script: |
+                mkdir -p /home/tg_bot
+                cd /home/tg_bot
+                git init
+                git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/{{ github.event.repository.name }}.git
+                docker-compose down
+                docker-compose build
+                docker-compose up -d --force-recreate
