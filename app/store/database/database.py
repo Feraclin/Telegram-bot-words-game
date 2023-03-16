@@ -1,18 +1,20 @@
 import logging
 from typing import TYPE_CHECKING, Optional
 
+from sqlalchemy.ext.asyncio import (
+    async_sessionmaker,
+)
+
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_scoped_session,
     create_async_engine,
-    async_sessionmaker,
 )
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.store.database import DB
-
 
 if TYPE_CHECKING:
     from app.web.app import Application
@@ -81,6 +83,7 @@ class Database:
 
     async def disconnect(self, *_: list, **__: dict) -> None:
         try:
-            await self.engine_.dispose()
+            if self.engine_:
+                await self.engine_.dispose()
         except Exception as e:
             self.logger.info(f"Disconnect from engine error {e}")

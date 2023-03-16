@@ -1,0 +1,8 @@
+.github
+.pytest_cache
+.htmlcov
+tests
+.env_dev
+.gitignore
+.env
+

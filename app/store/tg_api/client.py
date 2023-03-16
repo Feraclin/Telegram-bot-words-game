@@ -63,21 +63,6 @@ class TgClient:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 res_dict = await resp.json()
-
-                return SendMessageResponse.Schema().load(res_dict)
-
-    async def send_keyboard_to_player(self, chat_id: int, text: str, keyboard: dict):
-        url = self.get_url("sendMessage")
-        payload = {
-            "chat_id": chat_id,
-            "text": text,
-            "reply_markup": keyboard,
-            "parse_mode": "Markdown",
-        }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as resp:
-                res_dict = await resp.json()
                 return SendMessageResponse.Schema().load(res_dict)
 
     async def send_poll(
@@ -131,15 +116,3 @@ class TgClient:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
                 return resp.status
-
-    async def edit_message_text(self, chat_id: int, message_id: int):
-        url = self.get_url("editMessageText")
-        payload = {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": "Мы учтем ваше мнение(нет)",
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as resp:
-                res_dict = await resp.json()
-                return SendMessageResponse.Schema().load(res_dict)

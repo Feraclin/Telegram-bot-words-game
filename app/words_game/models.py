@@ -1,7 +1,7 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
 
-from app.store.database.sqlalchemy_base import DB, bigint, list_str
+from app.store.database.sqlalchemy_base import DB, bigint
 
 
 class User(MappedAsDataclass, DB):
@@ -18,7 +18,7 @@ class GameSession(MappedAsDataclass, DB):
     id: Mapped[int] = mapped_column(primary_key=True)
     game_type: Mapped[str] = mapped_column(nullable=False)
     chat_id: Mapped[bigint] = mapped_column(nullable=False)
-
+    words: Mapped[str] = mapped_column(nullable=True)
     next_user_id: Mapped[bigint] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
@@ -52,7 +52,6 @@ class UserGameSession(MappedAsDataclass, DB):
     life: Mapped[int] = mapped_column(default=3)
     round_: Mapped[int] = mapped_column(nullable=True, default=0)
     point: Mapped[int] = mapped_column(nullable=True, default=0)
-    poll_vote: Mapped[bool] = mapped_column(nullable=True, default=None)
 
 
 class UsedCity(MappedAsDataclass, DB):
@@ -91,3 +90,25 @@ class WordsInGame(MappedAsDataclass, DB):
         GameSession, backref="words_in_game", lazy="joined"
     )
     word: Mapped[Words] = relationship(Words, backref="words_in_game", lazy="joined")
+
+
+class GameSettings(MappedAsDataclass, DB):
+    __tablename__ = "game_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    response_time: Mapped[int] = mapped_column(nullable=False, default=15)
+    anonymous_poll: Mapped[bool] = mapped_column(nullable=False, default=True)
+    poll_time: Mapped[int] = mapped_column(nullable=False, default=15)
+
+    _instance = None
+
+    @classmethod
+    async def get_instance(cls, session):
+        if cls._instance is None:
+            async with session() as session:
+                cls._instance = (await session.execute(select(cls))).scalar_one_or_none()
+                if cls._instance is None:
+                    cls._instance = cls()
+                    session.add(cls._instance)
+                    await session.commit()
+        return cls._instance
