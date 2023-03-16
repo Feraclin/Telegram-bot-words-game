@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
 
 from app.store.database.sqlalchemy_base import DB, bigint
@@ -103,13 +103,12 @@ class GameSettings(MappedAsDataclass, DB):
     _instance = None
 
     @classmethod
-    def get_instance(cls, sessionmaker):
+    async def get_instance(cls, session):
         if cls._instance is None:
-            session = sessionmaker()
-            with session.begin() as session:
-                cls._instance = session.query(cls).first()
+            async with session() as session:
+                cls._instance = (await session.execute(select(cls))).scalar_one_or_none()
                 if cls._instance is None:
                     cls._instance = cls()
                     session.add(cls._instance)
-                    session.commit()
+                    await session.commit()
         return cls._instance

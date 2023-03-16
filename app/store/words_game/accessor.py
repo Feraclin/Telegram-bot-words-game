@@ -60,28 +60,34 @@ class WGAccessor:
     database: "Database"
     logger: logging.Logger = logging.getLogger("words_game")
 
-    async def select_active_session_by_id(
-        self, user_id: int | None = None, chat_id: int | None = None
+    async def get_session_by_id(
+        self, user_id: int | None = None, chat_id: int | None = None, is_active: bool = True
     ) -> GameSession | None:
         """
         Получение активной игровой сессии по id пользователя или id чата.
 
         :param user_id: id пользователя
         :param chat_id: id чата
+        :param is_active: статус игровой сессии
         :return: активная игровая сессия
         """
         if user_id:
-            query = select(GameSession).where(
-                GameSession.creator_id == user_id, GameSession.is_active == True
+            query = select(GameSession.id).where(
+                GameSession.chat_id == user_id, GameSession.is_active == is_active
             )
         elif chat_id:
-            query = select(GameSession).where(
-                GameSession.chat_id == chat_id, GameSession.is_active == True
+            query = select(GameSession.id).where(
+                GameSession.chat_id == chat_id, GameSession.is_active == is_active
             )
         else:
             return None
-        res = await self.database.execute_query(query)
-        return res.scalar()
+        session_id = (await self.database.execute_query(query)).scalars().all()
+        if not session_id:
+            return None
+        stmt = select(GameSession).where(GameSession.id == max(session_id))
+        res = await self.database.execute_query(stmt)
+        res = res.scalar()
+        return res if res else None
 
     async def create_game_session(self, user_id: int, chat_id: int, chat_type: str) -> GameSession:
         """
@@ -125,7 +131,7 @@ class WGAccessor:
                 is_active=status,
                 next_start_letter=next_letter if next_letter else GameSession.next_start_letter,
                 words=words if words else GameSession.words,
-                current_poll_id=poll_id if poll_id else GameSession.current_poll_id,
+                current_poll_id=poll_id,
                 next_user_id=next_user_id if next_user_id else GameSession.next_user_id,
             )
             .returning(GameSession)
@@ -324,11 +330,12 @@ class WGAccessor:
         )
         await self.database.execute_query(query)
 
-    async def get_team_by_game_id(self, game_session_id: int) -> list[int]:
+    async def get_team_by_game_id(self, game_session_id: int, player_id: int | None = None) -> list[int]:
         """
         Получение списка игроков, которые использовались в игре.
 
         :param game_session_id: id игровой сессии
+        :param player_id: id игрока
         :return: список игроков
         """
         query = (
@@ -336,13 +343,15 @@ class WGAccessor:
             .where(
                 UserGameSession.game_sessions_id == game_session_id,
                 UserGameSession.life > 0,
+                UserGameSession.player_id != player_id,
             )
             .group_by(UserGameSession.player_id)
         )
 
         res = await self.database.execute_query(query)
         team_lst = res.scalars().all()
-        return team_lst
+        print(res)
+        return team_lst if team_lst else [player_id, ]
 
     async def remove_life_from_player(self, game_id: int, player_id: int, round_: int = 0) -> None:
         """
@@ -447,3 +456,17 @@ class WGAccessor:
         query = select(GameSettings)
         res = await self.database.execute_query(query)
         return res.scalar_one()
+
+    async def get_player(self, player_id: int, game_session_id: int) -> UserGameSession | None:
+        """
+        Получение жизни игрока.
+
+        :param player_id: id игрока
+        :param game_session_id: id игровой сессии
+        """
+        query = select(UserGameSession).where(
+            UserGameSession.player_id == player_id,
+            UserGameSession.game_sessions_id == game_session_id,
+        )
+        res = await self.database.execute_query(query)
+        return res.scalar()
