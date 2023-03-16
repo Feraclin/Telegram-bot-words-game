@@ -52,6 +52,7 @@ class UserGameSession(MappedAsDataclass, DB):
     life: Mapped[int] = mapped_column(default=3)
     round_: Mapped[int] = mapped_column(nullable=True, default=0)
     point: Mapped[int] = mapped_column(nullable=True, default=0)
+    poll_answer: Mapped[bool] = mapped_column(nullable=True, default=None)
 
 
 class UsedCity(MappedAsDataclass, DB):
