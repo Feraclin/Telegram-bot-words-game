@@ -289,14 +289,14 @@ class WordGameMixin(BaseMixin):
                 message=message_add_to_team, routing_key=self.routing_key_sender
             )
 
-    async def pick_leader(self, game: GameSession, player: int = None):
+    async def pick_leader(self, game: GameSession, player_id: int = None):
         """
         Метод выбора игрока для ответа
         (для исключения подстав среди игроков в
         каждом раунде игрок выбирается случайно из еще не игравших в раунде)
 
-        :param game:
-        :param player:
+        :param game: игра
+        :param player_id: игрок ID
         :return:
         """
         if game is None:
@@ -311,24 +311,24 @@ class WordGameMixin(BaseMixin):
             """
             Если остался 1 игрок с 1 жизнью, то игра окончена
             """
-            player = team[0]
+            player_id = team[0]
             player_life = await self.words_game.get_player(
-                player_id=player, game_session_id=game.id
+                player_id=player_id, game_session_id=game.id
             )
             if player_life == 1:
                 await self.stop_game_group(game=game)
                 return
 
-        player = await self.words_game.select_user_by_id(choice(team) if not player else player)
+        player_id = await self.words_game.select_user_by_id(choice(team) if not player_id else player_id)
 
-        game.next_user_id = player.id
+        game.next_user_id = player_id.id
 
-        await self.words_game.change_next_user_to_game_session(game_id=game.id, user_id=player.id)
+        await self.words_game.change_next_user_to_game_session(game_id=game.id, user_id=player_id.id)
 
         text = (
-            f"@{player.username} назови слово на букву {game.next_start_letter}"
+            f"@{player_id.username} назови слово на букву {game.next_start_letter}"
             if game.next_start_letter
-            else f"@{player.username} назови слово"
+            else f"@{player_id.username} назови слово"
         )
 
         message_say_word = {
@@ -340,12 +340,12 @@ class WordGameMixin(BaseMixin):
         await self.rabbitMQ.send_event(
             message=message_say_word, routing_key=self.routing_key_sender
         )
-        player = await self.words_game.get_player(player_id=player.id, game_session_id=game.id)
+        player_id = await self.words_game.get_player(player_id=player_id.id, game_session_id=game.id)
         message_slow_player = {
             "type_": "slow_player",
             "chat_id": game.chat_id,
-            "user_id": player.player_id,
-            "round": player.round_,
+            "user_id": player_id.player_id,
+            "round": player_id.round_,
             "game_id": game.id,
         }
 

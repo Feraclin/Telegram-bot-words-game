@@ -345,21 +345,15 @@ class WGAccessor:
             .where(
                 UserGameSession.game_sessions_id == game_session_id,
                 UserGameSession.life > 0,
-                UserGameSession.player_id != player_id,
             )
             .group_by(UserGameSession.player_id)
         )
 
         res = await self.database.execute_query(query)
-        team_lst = res.scalars().all()
-        print(res)
-        return (
-            team_lst
-            if team_lst
-            else [
-                player_id,
-            ]
-        )
+        team_lst: list = res.scalars().all()
+        if len(team_lst) > 1:
+            team_lst.remove(player_id)
+        return team_lst
 
     async def remove_life_from_player(self, game_id: int, player_id: int, round_: int = 0) -> None:
         """
