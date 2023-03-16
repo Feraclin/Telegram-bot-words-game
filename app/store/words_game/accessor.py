@@ -330,7 +330,9 @@ class WGAccessor:
         )
         await self.database.execute_query(query)
 
-    async def get_team_by_game_id(self, game_session_id: int, player_id: int | None = None) -> list[int]:
+    async def get_team_by_game_id(
+        self, game_session_id: int, player_id: int | None = None
+    ) -> list[int]:
         """
         Получение списка игроков, которые использовались в игре.
 
@@ -351,7 +353,13 @@ class WGAccessor:
         res = await self.database.execute_query(query)
         team_lst = res.scalars().all()
         print(res)
-        return team_lst if team_lst else [player_id, ]
+        return (
+            team_lst
+            if team_lst
+            else [
+                player_id,
+            ]
+        )
 
     async def remove_life_from_player(self, game_id: int, player_id: int, round_: int = 0) -> None:
         """

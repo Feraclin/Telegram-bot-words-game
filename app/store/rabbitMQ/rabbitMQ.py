@@ -14,6 +14,16 @@ logging.basicConfig(level=logging.INFO)
 
 
 class RabbitMQ:
+    """
+    RabbitMQ client
+    Методы:
+
+    connect - подключение к RabbitMQ
+    disconnect - отключение от RabbitMQ
+    send_event - отправка сообщения
+    listen_events - прослушивание событий
+    """
+
     def __init__(
         self,
         app: Optional["Application"] = None,
@@ -33,8 +43,12 @@ class RabbitMQ:
         self.listener: asyncio.Task | None = None
         self.app = app
         self.logger = logging.getLogger("rabbit")
+        self.channel: aio_pika.RobustChannel | None = None
 
-    async def connect(self, *_: list, **__: dict) -> None:
+    async def connect(self) -> None:
+        """
+        Подключение к RabbitMQ
+        """
         loop = asyncio.get_event_loop()
         try:
             connection = await aio_pika.connect_robust(self.url, loop=loop)
@@ -52,14 +66,21 @@ class RabbitMQ:
             durable=True,
             arguments={"x-delayed-type": "direct"},
         )
-
+        self.channel = channel
         self.connection_ = connection
         self.exchange = auth_exchange
         self.logger.info("action=setup_rabbitmq, status=success")
 
-    async def disconnect(self, *_: list, **__: dict) -> None:
+    async def disconnect(self) -> None:
+        """
+        Отключение от RabbitMQ
+        """
+        if self.channel:
+            await self.channel.close()
+            self.channel = None
         if self.connection_:
             await self.connection_.close()
+            self.connection_ = None
         self.logger.info("action=close_rabbitmq, status=success")
 
     async def send_event(
@@ -68,7 +89,12 @@ class RabbitMQ:
         routing_key: str,
         delay: int = 0,
     ) -> None:
-        """Publish a message serialized to json to auth exchange."""
+        """
+        Отправка сообщения
+        :param message: словарь с сообщением
+        :param routing_key: роутинг ключ
+        :param delay: время жизни сообщения
+        """
         self.logger.info(f"action=send_event, status=success, message={message}")
 
         await self.exchange.publish(
@@ -84,6 +110,16 @@ class RabbitMQ:
     async def listen_events(
         self, routing_key: list[str], queue_name: str, on_message_func=None
     ) -> None:
+        """
+        Прослушивание событий
+        :param routing_key: роутинг ключ
+        :param queue_name: имя очереди
+        :param on_message_func: функция, которая будет вызвана при получении сообщения
+        """
+        self.logger.info(
+            f"action=listen_events, status=success, routing_key={routing_key}, queue_name={queue_name}"
+        )
+
         try:
             channel = await self.connection_.channel()
             await channel.set_qos(prefetch_count=1)
@@ -110,4 +146,8 @@ class RabbitMQ:
             pass
 
     async def on_message(self, message):
+        """
+        Функция, которая будет вызвана при получении сообщения
+        :param message: сообщение
+        """
         self.logger.info("Message body is: %r" % bson.loads(message.body))
