@@ -65,7 +65,7 @@ class GameSettingsView(AuthRequiredMixin, View):
     @docs(tags=["game"], summary="Get Game Settings", description="Get game settings")
     @response_schema(GameSettingsSchema, 200)
     async def get(self):
-        game_settings = GameSettings.get_instance(self.request.app.database.session)
+        game_settings = await GameSettings.get_instance(self.request.app.database.session)
         return json_response(data={"game_settings": GameSettingsSchema().dump(game_settings)})
 
     @docs(tags=["game"], summary="Update Game Settings", description="Update game settings")
@@ -73,7 +73,7 @@ class GameSettingsView(AuthRequiredMixin, View):
     @response_schema(GameSettingsSchema, 200)
     async def post(self):
         data = await self.request.json()
-        game_settings = GameSettings.get_instance(self.request.app.database.session)
+        game_settings = await GameSettings.get_instance(self.request.app.database.session)
         game_settings.response_time = data.get("response_time", game_settings.response_time)
         game_settings.anonymous_poll = data.get("anonymous_poll", game_settings.anonymous_poll)
         game_settings.poll_time = data.get("poll_time", game_settings.poll_time)

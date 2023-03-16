@@ -6,7 +6,7 @@ from .constnant import get_update_timeout
 from app.store.rabbitMQ.rabbitMQ import RabbitMQ
 from app.store.tg_api.client import TgClient
 from app.store.tg_api.schemes import UpdateObj
-from app.web.config import ConfigEnv, config
+from app.web.config import ConfigEnv
 
 
 class Poller:

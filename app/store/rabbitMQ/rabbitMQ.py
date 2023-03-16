@@ -55,7 +55,7 @@ class RabbitMQ:
 
         self.connection_ = connection
         self.exchange = auth_exchange
-        self.logger.info(f"action=setup_rabbitmq, status=success")
+        self.logger.info("action=setup_rabbitmq, status=success")
 
     async def disconnect(self, *_: list, **__: dict) -> None:
         if self.connection_:
