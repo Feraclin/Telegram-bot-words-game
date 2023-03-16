@@ -615,6 +615,8 @@ class Worker(CityGameMixin, WordGameMixin):
                     if game is None:
                         return await message.ack()
                     player = await self.words_game.get_player(game_session_id=game.id, player_id=text["user_id"])
+                    if player is None:
+                        return await message.ack()
                     if game.current_poll_id is None and \
                             game.next_user_id == text["user_id"] and player.round_ == text["round"]:
                         await self.words_game.remove_life_from_player(
