@@ -301,7 +301,9 @@ class WordGameMixin(BaseMixin):
         """
         if game is None:
             return
-        team = await self.words_game.get_team_by_game_id(game_session_id=game.id, player_id=game.next_user_id)
+        team = await self.words_game.get_team_by_game_id(
+            game_session_id=game.id, player_id=game.next_user_id
+        )
         if len(team) == 0:
             await self.stop_game_group(game=game)
             return
@@ -338,8 +340,7 @@ class WordGameMixin(BaseMixin):
         await self.rabbitMQ.send_event(
             message=message_say_word, routing_key=self.routing_key_sender
         )
-        player = await self.words_game.get_player(player_id=player.id,
-                                                  game_session_id=game.id)
+        player = await self.words_game.get_player(player_id=player.id, game_session_id=game.id)
         message_slow_player = {
             "type_": "slow_player",
             "chat_id": game.chat_id,
@@ -603,9 +604,7 @@ class Worker(CityGameMixin, WordGameMixin):
                 case "poll_result":
                     game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
                     if game:
-                        await self.words_game.update_game_session(
-                            game_id=game.id, poll_id=None
-                        )
+                        await self.words_game.update_game_session(game_id=game.id, poll_id=None)
                         if text["poll_result"] == "yes":
                             await self.right_word(game=game, word=text["word"])
                         else:
@@ -614,11 +613,16 @@ class Worker(CityGameMixin, WordGameMixin):
                     game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
                     if game is None:
                         return await message.ack()
-                    player = await self.words_game.get_player(game_session_id=game.id, player_id=text["user_id"])
+                    player = await self.words_game.get_player(
+                        game_session_id=game.id, player_id=text["user_id"]
+                    )
                     if player is None:
                         return await message.ack()
-                    if game.current_poll_id is None and \
-                            game.next_user_id == text["user_id"] and player.round_ == text["round"]:
+                    if (
+                        game.current_poll_id is None
+                        and game.next_user_id == text["user_id"]
+                        and player.round_ == text["round"]
+                    ):
                         await self.words_game.remove_life_from_player(
                             game_id=game.id, player_id=text["user_id"], round_=1
                         )
@@ -627,7 +631,8 @@ class Worker(CityGameMixin, WordGameMixin):
                     game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
                     if game:
                         await self.words_game.update_game_session(
-                            game_id=game.id, poll_id=text["poll_id"])
+                            game_id=game.id, poll_id=text["poll_id"]
+                        )
                 case _:
                     self.logger.info(f"unknown type {text['type_']}")
         await message.ack()
@@ -719,7 +724,6 @@ class Worker(CityGameMixin, WordGameMixin):
                 ):
                     await self.check_word(upd=upd)
                 case _ if await self.words_game.get_session_by_id(chat_id=upd.message.from_.id):
-
                     await self.check_city(upd=upd)
         except IntegrityError as e:
             self.logger.info(f"message {e}")

@@ -23,6 +23,7 @@ class RabbitMQ:
     send_event - отправка сообщения
     listen_events - прослушивание событий
     """
+
     def __init__(
         self,
         app: Optional["Application"] = None,
@@ -88,7 +89,6 @@ class RabbitMQ:
         routing_key: str,
         delay: int = 0,
     ) -> None:
-
         """
         Отправка сообщения
         :param message: словарь с сообщением
@@ -116,7 +116,9 @@ class RabbitMQ:
         :param queue_name: имя очереди
         :param on_message_func: функция, которая будет вызвана при получении сообщения
         """
-        self.logger.info(f"action=listen_events, status=success, routing_key={routing_key}, queue_name={queue_name}")
+        self.logger.info(
+            f"action=listen_events, status=success, routing_key={routing_key}, queue_name={queue_name}"
+        )
 
         try:
             channel = await self.connection_.channel()

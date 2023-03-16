@@ -156,16 +156,19 @@ class Sender:
                     question=upd["question"],
                     options=upd["options"],
                     anonymous=upd["anonymous"],
-                    period=upd.get("period", 10)
+                    period=upd.get("period", 10),
                 )
                 upd["type_"] = "send_poll_answer"
                 upd["poll_message_id"] = poll.result.message_id
                 upd["poll_id"] = poll.result.poll.id
                 await self.rabbitMQ.send_event(
-                    message={"type_": "poll_id",
-                             "poll_id": poll.result.poll.id,
-                             "chat_id": upd["chat_id"]},
-                    routing_key=self.routing_key_worker)
+                    message={
+                        "type_": "poll_id",
+                        "poll_id": poll.result.poll.id,
+                        "chat_id": upd["chat_id"],
+                    },
+                    routing_key=self.routing_key_worker,
+                )
                 await self.rabbitMQ.send_event(
                     message=upd,
                     routing_key=self.routing_key_sender,
