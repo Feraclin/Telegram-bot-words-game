@@ -54,7 +54,7 @@ Aiohttp_web представляет собой веб-интерфейс для
 
 ### тестовое покрытие
 
-+ poetry run pytest --cov=app --cov-report=html
++ poetry run pytest --cov=app --cov-report=html --ignore=main*
 
 ### aiohttp-devtools
 

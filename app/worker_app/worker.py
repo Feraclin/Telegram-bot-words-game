@@ -682,6 +682,7 @@ class Worker(CityGameMixin, WordGameMixin):
             """
 
             game = await self.words_game.get_session_by_id(chat_id=upd.message.chat.id)
+
             message_last_letter = {
                 "type_": "message",
                 "chat_id": upd.message.chat.id,
@@ -708,6 +709,7 @@ class Worker(CityGameMixin, WordGameMixin):
                     await handle_help(self, upd)
                 case "/last" if upd.message.chat.type == "private":
                     await handle_last(self, upd)
+
                 case "/stat":
                     await self.statistics(upd=upd)
                 case _ if upd.message.chat.type != "private" and await self.words_game.get_session_by_id(
@@ -715,6 +717,7 @@ class Worker(CityGameMixin, WordGameMixin):
                 ):
                     await self.check_word(upd=upd)
                 case _ if await self.words_game.get_session_by_id(chat_id=upd.message.from_.id):
+
                     await self.check_city(upd=upd)
         except IntegrityError as e:
             self.logger.info(f"message {e}")

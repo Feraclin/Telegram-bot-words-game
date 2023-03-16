@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship, MappedAsDataclass
 
-from app.store.database.sqlalchemy_base import DB, bigint, list_str
+from app.store.database.sqlalchemy_base import DB, bigint
 
 
 class User(MappedAsDataclass, DB):
@@ -18,7 +18,7 @@ class GameSession(MappedAsDataclass, DB):
     id: Mapped[int] = mapped_column(primary_key=True)
     game_type: Mapped[str] = mapped_column(nullable=False)
     chat_id: Mapped[bigint] = mapped_column(nullable=False)
-    words: Mapped[list_str] = mapped_column(nullable=True)
+    words: Mapped[str] = mapped_column(nullable=True)
     next_user_id: Mapped[bigint] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )

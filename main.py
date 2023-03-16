@@ -3,7 +3,7 @@ import signal
 
 from aiohttp.web_runner import AppRunner, TCPSite
 
-from app.sender_app.sender import Sender
+from app.sender.sender import Sender
 from app.worker_app.worker import Worker
 from app.poller_app.poller import Poller
 from app.web.config import config
@@ -40,6 +40,8 @@ if __name__ == "__main__":
         loop.run_forever()
     except KeyboardInterrupt:
         pass
+    except Exception as e:
+        print(f"Error: {e}")
     finally:
         loop.create_task(poller.stop())
         loop.create_task(worker.stop())

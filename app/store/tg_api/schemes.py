@@ -74,6 +74,7 @@ class Message:
     date: int
     text: str | None = "Картинки не смотрю"
     poll: Poll | None = None
+    reply_markup: dict | None = None
 
     class Meta:
         unknown = EXCLUDE

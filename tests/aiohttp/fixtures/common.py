@@ -1,12 +1,8 @@
-import logging
-import os
-from hashlib import sha256
 from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp.test_utils import TestClient, loop_context
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text, select
 
 from app.admin.models import Admin, AdminModel
 from app.store import Database
@@ -23,15 +19,9 @@ def event_loop():
 
 @pytest.fixture(scope="session")
 def server():
-    app = setup_app(
-        config_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "config.yml")
-    )
+    app = setup_app()
     app.on_startup.clear()
     app.on_shutdown.clear()
-    app.store.vk_api = AsyncMock()
-    app.store.vk_api.send_message = AsyncMock()
-    app.bots_manager = AsyncMock()
-    app.tg_bot = AsyncMock()
     app.database = Database(app)
     app.on_startup.append(app.database.connect)
     app.on_shutdown.append(app.database.disconnect)
@@ -47,23 +37,6 @@ def store(server) -> Store:
 @pytest.fixture
 def db_session(server):
     return server.database.session
-
-
-@pytest.fixture(autouse=False, scope="function")
-async def clear_db(server):
-    yield
-    try:
-        session = AsyncSession(server.database.engine_)
-        connection = session.connection()
-        for table in server.database.db_.metadata.tables:
-            await session.execute(text(f"TRUNCATE {table} CASCADE"))
-            await session.execute(text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1"))
-
-        await session.commit()
-        connection.close()
-
-    except Exception as err:
-        logging.warning(err)
 
 
 @pytest.fixture
@@ -90,11 +63,8 @@ async def authed_cli(cli, config) -> TestClient:
 
 @pytest.fixture(autouse=True)
 async def admin(cli, db_session, config: Config) -> Admin:
-    new_admin = AdminModel(
-        email=config.admin.email,
-        password=sha256(config.admin.password.encode()).hexdigest(),
-    )
+    new_admin = select(AdminModel).where(AdminModel.email == config.admin.email)
     async with db_session.begin() as session:
-        session.add(new_admin)
+        new_admin = (await session.execute(new_admin)).scalar_one()
 
     return Admin(id=new_admin.id, email=new_admin.email)
