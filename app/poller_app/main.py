@@ -4,5 +4,4 @@ from starter import starter
 
 if __name__ == "__main__":
     poller = Poller(cfg=config)
-    starter(start_tasks=[poller.start],
-            stop_tasks=[poller.stop])
+    starter(start_tasks=[poller.start], stop_tasks=[poller.stop])

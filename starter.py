@@ -29,7 +29,7 @@ def starter(start_tasks: list[asyncio.coroutines], stop_tasks: list[asyncio.coro
     finally:
         try:
             stop_tasks = [loop.create_task(t()) for t in stop_tasks]
-            loop.run_until_complete(asyncio.gather(*stop_tasks))
+            loop.run_until_complete(asyncio.gather(*stop_tasks, return_exceptions=True))
         except KeyboardInterrupt:
             pass
         finally:

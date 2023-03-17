@@ -91,14 +91,16 @@ class WGAccessor:
         res = res.scalar()
         return res if res else None
 
-    async def create_game_session(self,
-                                  user_id: int,
-                                  chat_id: int,
-                                  chat_type: str,
-                                  response_time: int = 15,
-                                  anonymous_poll: bool = True,
-                                  poll_time: int = 15,
-                                  life: int = 3) -> GameSession:
+    async def create_game_session(
+        self,
+        user_id: int,
+        chat_id: int,
+        chat_type: str,
+        response_time: int = 15,
+        anonymous_poll: bool = True,
+        poll_time: int = 15,
+        life: int = 3,
+    ) -> GameSession:
         """
         Создание игровой сессии.
 
@@ -118,7 +120,7 @@ class WGAccessor:
             response_time=response_time,
             poll_time=poll_time,
             anonymous_poll=anonymous_poll,
-            life=life
+            life=life,
         )
         res = await self.database.execute_query(query)
         return res.scalar()
@@ -311,10 +313,7 @@ class WGAccessor:
         cities = res.scalars().all()
         return [city.city for city in cities]
 
-    async def add_user_to_team(self,
-                               user_id: int,
-                               game_id: int,
-                               life: int = 3) -> None:
+    async def add_user_to_team(self, user_id: int, game_id: int, life: int = 3) -> None:
         """
         Добавление игрока в команду.
 
@@ -323,9 +322,9 @@ class WGAccessor:
         :param life:
         :return:
         """
-        query = psg_insert(UserGameSession).values(player_id=user_id,
-                                                   game_sessions_id=game_id,
-                                                   life=life)
+        query = psg_insert(UserGameSession).values(
+            player_id=user_id, game_sessions_id=game_id, life=life
+        )
         query = query.on_conflict_do_nothing()
         await self.database.execute_query(query)
         return
@@ -498,10 +497,9 @@ class WGAccessor:
         res = await self.database.execute_query(query)
         return res.scalar()
 
-    async def set_player_poll_answer(self,
-                                     game_session_id: int,
-                                     player_id: int,
-                                     answer: bool) -> None:
+    async def set_player_poll_answer(
+        self, game_session_id: int, player_id: int, answer: bool
+    ) -> None:
         """
         Установка ответа на опрос.
         :param game_session_id: id игровой сессии
@@ -509,9 +507,14 @@ class WGAccessor:
         :param answer: ответ на опрос
         :return:
         """
-        query = update(UserGameSession).where(UserGameSession.player_id == player_id,
-                                              UserGameSession.game_sessions_id == game_session_id)\
+        query = (
+            update(UserGameSession)
+            .where(
+                UserGameSession.player_id == player_id,
+                UserGameSession.game_sessions_id == game_session_id,
+            )
             .values(poll_answer=answer)
+        )
         res = await self.database.execute_query(query)
         return
 
@@ -521,12 +524,18 @@ class WGAccessor:
         :param game_session_id: id игровой сессии
         :return: bool
         """
-        query = select(UserGameSession.poll_answer).where(UserGameSession.game_sessions_id == game_session_id)
+        query = select(UserGameSession.poll_answer).where(
+            UserGameSession.game_sessions_id == game_session_id
+        )
         res = await self.database.execute_query(query)
         from collections import Counter
+
         answer_lst = Counter(res.scalars().all())
-        query = update(UserGameSession).where(UserGameSession.game_sessions_id == game_session_id)\
+        query = (
+            update(UserGameSession)
+            .where(UserGameSession.game_sessions_id == game_session_id)
             .values(poll_answer=None)
+        )
         await self.database.execute_query(query)
         if answer_lst[True] > answer_lst[False]:
             return True
