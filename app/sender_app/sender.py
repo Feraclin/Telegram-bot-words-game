@@ -218,6 +218,7 @@ class Sender:
             "poll_id": upd["poll_id"],
             "poll_result": res_poll,
             "word": word,
+            "poll_type": poll.result.poll.is_anonymous,
         }
 
         await self.rabbitMQ.send_event(

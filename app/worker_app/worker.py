@@ -45,6 +45,12 @@ class BaseMixin:
 class CityGameMixin(BaseMixin):
     """
     Вариант игры в города для одного игрока
+    Методы:
+    start_game: Метод для запуска игры в города для одного игрока.
+    stop_game: Метод для остановки игры в города для одного игрока.
+    pick_city: Метод для выбора города игроком.
+    check_city: Метод для проверки города игроком.
+    bot_looser: Метод для обработки поражения бота в игре в города.
     """
 
     async def statistics(self, upd: UpdateObj, game: GameSession | None = None) -> None:
@@ -233,6 +239,14 @@ class CityGameMixin(BaseMixin):
 class WordGameMixin(BaseMixin):
     """
     Вариант игры в слова для команды
+    Методы:
+    chose_your_team: Метод для выбора команды игроком.
+    add_to_team: Метод для добавления игрока в команду.
+    pick_leader: Метод для выбора лидера команды.
+    check_word: Метод для проверки слова игроком.
+    right_word: Метод для обработки правильного слова в игре в города.
+    words_poll: Метод для обработки голосования за слово в игре в города.
+    stop_game_group: Метод для остановки игры в города для группы игроков.
     """
 
     async def statistics(self, upd: UpdateObj, game: GameSession | None = None) -> None:
@@ -542,22 +556,12 @@ class Worker(CityGameMixin, WordGameMixin):
     setup_settings: Метод для настройки настроек игры.
     handle_update: Метод для обработки входящих сообщений Telegram.
     handle_callback: Метод для обработки входящих callback от Telegram.
+    handle_poll_answer: Метод для обработки ответа на опрос от Telegram
     on_message: Метод для обработки входящих сообщений от Telegram.
     start: Метод для запуска рабочих процессов и подключения к базе данных и RabbitMQ.
     stop: Метод для остановки рабочих процессов и отключения от RabbitMQ и базы данных.
-    start_game: Метод для запуска игры в города для одного игрока.
-    stop_game: Метод для остановки игры в города для одного игрока.
-    pick_city: Метод для выбора города игроком.
-    check_city: Метод для проверки города игроком.
-    bot_looser: Метод для обработки поражения бота в игре в города.
-    chose_your_team: Метод для выбора команды игроком.
-    add_to_team: Метод для добавления игрока в команду.
-    pick_leader: Метод для выбора лидера команды.
-    check_word: Метод для проверки слова игроком.
-    right_word: Метод для обработки правильного слова в игре в города.
-    words_poll: Метод для обработки голосования за слово в игре в города.
-    stop_game_group: Метод для остановки игры в города для группы игроков.
     statistics: Метод для получения статистики игры.
+
     """
 
     async def setup_settings(self):
@@ -587,7 +591,7 @@ class Worker(CityGameMixin, WordGameMixin):
         """
         if message.routing_key == "poller":
             try:
-                upd = UpdateObj.Schema().load(bson.loads(message.body))
+                upd: UpdateObj = UpdateObj.Schema().load(bson.loads(message.body))
             except ValidationError as e:
                 self.logger.info(f"validation {e}")
                 return
@@ -595,6 +599,8 @@ class Worker(CityGameMixin, WordGameMixin):
                 await self.handle_message(upd)
             elif upd.callback_query:
                 await self.handle_callback_query(upd)
+            elif upd.poll_answer:
+                await self.handle_poll_answer(upd)
         elif message.routing_key == self.routing_key_worker:
             text = bson.loads(message.body)
             match text["type_"]:
@@ -604,8 +610,11 @@ class Worker(CityGameMixin, WordGameMixin):
                 case "poll_result":
                     game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
                     if game:
+                        result = None
+                        if not text["poll_type"]:
+                            result = await self.words_game.check_not_anonim_poll(game_session_id=game.id)
                         await self.words_game.update_game_session(game_id=game.id, poll_id=None)
-                        if text["poll_result"] == "yes":
+                        if text["poll_result"] == "yes" or result:
                             await self.right_word(game=game, word=text["word"])
                         else:
                             await self.pick_leader(game=game)
@@ -804,3 +813,23 @@ class Worker(CityGameMixin, WordGameMixin):
             await self.rabbitMQ.send_event(
                 message=message_no_team, routing_key=self.routing_key_sender
             )
+
+    async def handle_poll_answer(self, upd: UpdateObj):
+        """
+        Обработка ответа на опрос.
+        :param upd: Объект обновления.
+        :return:
+        """
+        poll_id = upd.poll_answer.poll_id
+        player_id = upd.poll_answer.user.id
+        game = await self.words_game.get_game_session_by_poll_id(poll_id=poll_id)
+        if game:
+            if upd.poll_answer.option_ids:
+                answer = {0: True,
+                          1: False}.get(upd.poll_answer.option_ids[0], None)
+            else:
+                answer = None
+
+            await self.words_game.set_player_poll_answer(player_id=player_id,
+                                                         game_session_id=game.id,
+                                                         answer=answer)
