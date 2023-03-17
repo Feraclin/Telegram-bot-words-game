@@ -6,7 +6,7 @@ import bson
 from aio_pika.abc import AbstractIncomingMessage
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
-from .constant import help_msg
+from .constant import help_msg, faq_group, faq_solo
 from app.store.tg_api.schemes import UpdateObj
 from app.words_game.models import GameSession, GameSettings
 
@@ -709,6 +709,32 @@ class Worker(CityGameMixin, WordGameMixin):
                 message=message_last_letter, routing_key=self.routing_key_sender
             )
 
+        async def handle_faq(self, upd: UpdateObj):
+            """Обработка команды /FAQ.
+            :param self: Экземпляр класса.
+            :param upd: Объект обновления.
+            :return:
+            """
+            if upd.message.chat.type != "private":
+                await self.rabbitMQ.send_event(
+                    message={
+                        "type_": "message",
+                        "chat_id": upd.message.chat.id,
+                        "text": faq_group.format(response=self.game_settings.response_time,
+                                                 life=3),
+                    },
+                    routing_key=self.routing_key_sender,
+                )
+            else:
+                await self.rabbitMQ.send_event(
+                    message={
+                        "type_": "message",
+                        "chat_id": upd.message.chat.id,
+                        "text": faq_solo
+                                },
+                    routing_key=self.routing_key_sender,
+                )
+
         try:
             match upd.message.text:
                 case "/play" if upd.message.chat.type == "private":
@@ -728,6 +754,8 @@ class Worker(CityGameMixin, WordGameMixin):
 
                 case "/stat":
                     await self.statistics(upd=upd)
+                case "/FAQ":
+                    await handle_faq(self, upd=upd)
                 case _ if upd.message.chat.type != "private" and await self.words_game.get_session_by_id(
                     chat_id=upd.message.chat.id
                 ):

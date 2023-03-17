@@ -25,11 +25,6 @@ jobs:
     steps:
 
       - uses: actions/checkout@v2
-#      - name: Postgres Backup Restore
-#        uses: tj-actions/pg-restore@v4.5
-#        with:
-#          database_url: "postgres://kts_user:kts_pass@db:5432/kts"
-#          backup_file: "db/init.sql"
 
       - uses: actions/checkout@master
 
@@ -41,7 +36,7 @@ jobs:
       - name: Migrate database
         run: poetry run alembic upgrade head
       - name: Run tests
-        run: pytest -cov=app
+        run: pytest --cov=app
 
 #  build-and-deploy:
 #      runs-on: ubuntu-latest
