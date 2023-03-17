@@ -33,6 +33,14 @@ services:
     networks:
       - kts_st_week3
 
+  builder:
+    build:
+      context: .
+      dockerfile: ./compose/builder.Dockerfile
+    restart: always
+    env_file:
+      - .env_dev
+
 
   poller_app:
     build:
@@ -43,6 +51,7 @@ services:
       - .env_dev
     command: bash -c "cd /code/app/poller_app/ && python main.py"
     depends_on:
+      - builder
       - db
       - rabbitmq
     networks:
@@ -82,6 +91,7 @@ services:
       - .env_dev
     command: bash -c "alembic upgrade head && python aiohttp_app_main.py"
     depends_on:
+      - builder
       - db
       - rabbitmq
     ports:
