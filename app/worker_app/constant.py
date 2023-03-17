@@ -38,3 +38,4 @@ class GameSettings:
     response_time: int
     anonymous_poll: bool
     poll_time: int
+    life: int

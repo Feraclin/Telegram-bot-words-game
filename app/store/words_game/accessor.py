@@ -56,6 +56,7 @@ class WGAccessor:
     get_game_settings - получение настроек игры.
     set_player_poll_answer - установка ответа на опрос.
     check_not_anonim_poll - проверка результата опроса.
+    update_total_points_to_user - обновление очков игроков.
     """
 
     database: "Database"
@@ -96,7 +97,8 @@ class WGAccessor:
                                   chat_type: str,
                                   response_time: int = 15,
                                   anonymous_poll: bool = True,
-                                  poll_time: int = 15) -> GameSession:
+                                  poll_time: int = 15,
+                                  life: int = 3) -> GameSession:
         """
         Создание игровой сессии.
 
@@ -116,6 +118,7 @@ class WGAccessor:
             response_time=response_time,
             poll_time=poll_time,
             anonymous_poll=anonymous_poll,
+            life=life
         )
         res = await self.database.execute_query(query)
         return res.scalar()
@@ -308,15 +311,21 @@ class WGAccessor:
         cities = res.scalars().all()
         return [city.city for city in cities]
 
-    async def add_user_to_team(self, user_id: int, game_id: int) -> None:
+    async def add_user_to_team(self,
+                               user_id: int,
+                               game_id: int,
+                               life: int = 3) -> None:
         """
         Добавление игрока в команду.
 
         :param user_id:
         :param game_id:
+        :param life:
         :return:
         """
-        query = psg_insert(UserGameSession).values(player_id=user_id, game_sessions_id=game_id)
+        query = psg_insert(UserGameSession).values(player_id=user_id,
+                                                   game_sessions_id=game_id,
+                                                   life=life)
         query = query.on_conflict_do_nothing()
         await self.database.execute_query(query)
         return

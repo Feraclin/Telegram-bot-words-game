@@ -269,6 +269,7 @@ class WordGameMixin(BaseMixin):
                 response_time=self.game_settings.response_time,
                 anonymous_poll=self.game_settings.anonymous_poll,
                 poll_time=self.game_settings.poll_time,
+                life=self.game_settings.life,
             )
 
         message_create_team = {
@@ -295,6 +296,7 @@ class WordGameMixin(BaseMixin):
             await self.words_game.add_user_to_team(
                 game_id=game.id,
                 user_id=upd.callback_query.from_.id,
+                life=game.life,
             )
             message_add_to_team = {
                 "type_": "callback_alert",

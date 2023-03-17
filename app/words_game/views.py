@@ -77,5 +77,6 @@ class GameSettingsView(AuthRequiredMixin, View):
         game_settings.response_time = data.get("response_time", game_settings.response_time)
         game_settings.anonymous_poll = data.get("anonymous_poll", game_settings.anonymous_poll)
         game_settings.poll_time = data.get("poll_time", game_settings.poll_time)
+        game_settings.life = data.get("life", game_settings.life)
         await self.request.app.database.add_query(game_settings)
         return json_response(data={"game_settings": GameSettingsSchema().dump(game_settings)})

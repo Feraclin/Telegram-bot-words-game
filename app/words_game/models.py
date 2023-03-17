@@ -37,6 +37,7 @@ class GameSession(MappedAsDataclass, DB):
     response_time: Mapped[int] = mapped_column(nullable=False, default=15)
     anonymous_poll: Mapped[bool] = mapped_column(nullable=False, default=True)
     poll_time: Mapped[int] = mapped_column(nullable=False, default=15)
+    life: Mapped[int] = mapped_column(nullable=False, default=3)
 
 
 class UserGameSession(MappedAsDataclass, DB):
@@ -103,6 +104,7 @@ class GameSettings(MappedAsDataclass, DB):
     response_time: Mapped[int] = mapped_column(nullable=False, default=15)
     anonymous_poll: Mapped[bool] = mapped_column(nullable=False, default=True)
     poll_time: Mapped[int] = mapped_column(nullable=False, default=15)
+    life: Mapped[int] = mapped_column(nullable=False, default=3)
 
     _instance = None
 

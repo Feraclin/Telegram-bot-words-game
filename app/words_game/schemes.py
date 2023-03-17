@@ -49,6 +49,7 @@ class GameSettingsSchema(Schema):
     response_time = fields.Integer(default=15, required=False)
     anonymous_poll = fields.Boolean(default=True, required=False)
     poll_time = fields.Integer(default=15, required=False)
+    life = fields.Integer(default=3, required=False)
 
 
 class PaginationSchemaGames(Schema):
