@@ -9,6 +9,7 @@
 + /ping - проверить доступность бота
 + /help - показать справку по командам
 + /last - показать на какую букву город
++ /FAQ - показать правила игры
 
 Бот имеет два режима игры:
 
@@ -48,31 +49,34 @@ Aiohttp_web представляет собой веб-интерфейс для
 
 
 ### миграции
-
-+ poetry run alembic revision --autogenerate -m "name"
-+ poetry run alembic upgrade --head
-
+```python
+poetry run alembic revision --autogenerate -m "name"
+poetry run alembic upgrade --head
+```
 ### тестовое покрытие
-
-+ poetry run pytest --cov=app --cov-report=html --ignore=main*
-
+```python
+poetry run pytest --cov=app --cov-report=html --ignore=main*
+```
 ### aiohttp-devtools
-
-+ poetry run adev runserver .
-
+```python
+poetry run adev runserver .
+```
 ### RabbitMQ
 
 Очереди:
-
+```python
 + worker - tg_bot
 + sender - tg_bot_sender
-
+```
 Привязки
-
+```python
 + tg_bot - poller, worker_self, worker
 + tg_bot_sender - sender
-
+```
 
 ### Docker
 
-Сборка builder: docker build -t builder -f compose/builder.Dockerfile .
+Сборка builder:
+```
+docker build -t builder -f compose/builder.Dockerfile .
+```

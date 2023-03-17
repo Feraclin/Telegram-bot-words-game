@@ -6,7 +6,7 @@ import bson
 from aio_pika.abc import AbstractIncomingMessage
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
-from .constant import help_msg
+from .constant import help_msg, faq_group, faq_solo
 from app.store.tg_api.schemes import UpdateObj
 from app.words_game.models import GameSession, GameSettings
 
@@ -45,6 +45,12 @@ class BaseMixin:
 class CityGameMixin(BaseMixin):
     """
     Вариант игры в города для одного игрока
+    Методы:
+    start_game: Метод для запуска игры в города для одного игрока.
+    stop_game: Метод для остановки игры в города для одного игрока.
+    pick_city: Метод для выбора города игроком.
+    check_city: Метод для проверки города игроком.
+    bot_looser: Метод для обработки поражения бота в игре в города.
     """
 
     async def statistics(self, upd: UpdateObj, game: GameSession | None = None) -> None:
@@ -233,6 +239,14 @@ class CityGameMixin(BaseMixin):
 class WordGameMixin(BaseMixin):
     """
     Вариант игры в слова для команды
+    Методы:
+    chose_your_team: Метод для выбора команды игроком.
+    add_to_team: Метод для добавления игрока в команду.
+    pick_leader: Метод для выбора лидера команды.
+    check_word: Метод для проверки слова игроком.
+    right_word: Метод для обработки правильного слова в игре в города.
+    words_poll: Метод для обработки голосования за слово в игре в города.
+    stop_game_group: Метод для остановки игры в города для группы игроков.
     """
 
     async def statistics(self, upd: UpdateObj, game: GameSession | None = None) -> None:
@@ -289,14 +303,14 @@ class WordGameMixin(BaseMixin):
                 message=message_add_to_team, routing_key=self.routing_key_sender
             )
 
-    async def pick_leader(self, game: GameSession, player: int = None):
+    async def pick_leader(self, game: GameSession, player_id: int = None):
         """
         Метод выбора игрока для ответа
         (для исключения подстав среди игроков в
         каждом раунде игрок выбирается случайно из еще не игравших в раунде)
 
-        :param game:
-        :param player:
+        :param game: игра
+        :param player_id: игрок ID
         :return:
         """
         if game is None:
@@ -311,24 +325,24 @@ class WordGameMixin(BaseMixin):
             """
             Если остался 1 игрок с 1 жизнью, то игра окончена
             """
-            player = team[0]
+            player_id = team[0]
             player_life = await self.words_game.get_player(
-                player_id=player, game_session_id=game.id
+                player_id=player_id, game_session_id=game.id
             )
             if player_life == 1:
                 await self.stop_game_group(game=game)
                 return
 
-        player = await self.words_game.select_user_by_id(choice(team) if not player else player)
+        player_id = await self.words_game.select_user_by_id(choice(team) if not player_id else player_id)
 
-        game.next_user_id = player.id
+        game.next_user_id = player_id.id
 
-        await self.words_game.change_next_user_to_game_session(game_id=game.id, user_id=player.id)
+        await self.words_game.change_next_user_to_game_session(game_id=game.id, user_id=player_id.id)
 
         text = (
-            f"@{player.username} назови слово на букву {game.next_start_letter}"
+            f"@{player_id.username} назови слово на букву {game.next_start_letter}"
             if game.next_start_letter
-            else f"@{player.username} назови слово"
+            else f"@{player_id.username} назови слово"
         )
 
         message_say_word = {
@@ -340,12 +354,12 @@ class WordGameMixin(BaseMixin):
         await self.rabbitMQ.send_event(
             message=message_say_word, routing_key=self.routing_key_sender
         )
-        player = await self.words_game.get_player(player_id=player.id, game_session_id=game.id)
+        player_id = await self.words_game.get_player(player_id=player_id.id, game_session_id=game.id)
         message_slow_player = {
             "type_": "slow_player",
             "chat_id": game.chat_id,
-            "user_id": player.player_id,
-            "round": player.round_,
+            "user_id": player_id.player_id,
+            "round": player_id.round_,
             "game_id": game.id,
         }
 
@@ -542,22 +556,12 @@ class Worker(CityGameMixin, WordGameMixin):
     setup_settings: Метод для настройки настроек игры.
     handle_update: Метод для обработки входящих сообщений Telegram.
     handle_callback: Метод для обработки входящих callback от Telegram.
+    handle_poll_answer: Метод для обработки ответа на опрос от Telegram
     on_message: Метод для обработки входящих сообщений от Telegram.
     start: Метод для запуска рабочих процессов и подключения к базе данных и RabbitMQ.
     stop: Метод для остановки рабочих процессов и отключения от RabbitMQ и базы данных.
-    start_game: Метод для запуска игры в города для одного игрока.
-    stop_game: Метод для остановки игры в города для одного игрока.
-    pick_city: Метод для выбора города игроком.
-    check_city: Метод для проверки города игроком.
-    bot_looser: Метод для обработки поражения бота в игре в города.
-    chose_your_team: Метод для выбора команды игроком.
-    add_to_team: Метод для добавления игрока в команду.
-    pick_leader: Метод для выбора лидера команды.
-    check_word: Метод для проверки слова игроком.
-    right_word: Метод для обработки правильного слова в игре в города.
-    words_poll: Метод для обработки голосования за слово в игре в города.
-    stop_game_group: Метод для остановки игры в города для группы игроков.
     statistics: Метод для получения статистики игры.
+
     """
 
     async def setup_settings(self):
@@ -587,7 +591,7 @@ class Worker(CityGameMixin, WordGameMixin):
         """
         if message.routing_key == "poller":
             try:
-                upd = UpdateObj.Schema().load(bson.loads(message.body))
+                upd: UpdateObj = UpdateObj.Schema().load(bson.loads(message.body))
             except ValidationError as e:
                 self.logger.info(f"validation {e}")
                 return
@@ -595,6 +599,8 @@ class Worker(CityGameMixin, WordGameMixin):
                 await self.handle_message(upd)
             elif upd.callback_query:
                 await self.handle_callback_query(upd)
+            elif upd.poll_answer:
+                await self.handle_poll_answer(upd)
         elif message.routing_key == self.routing_key_worker:
             text = bson.loads(message.body)
             match text["type_"]:
@@ -604,8 +610,11 @@ class Worker(CityGameMixin, WordGameMixin):
                 case "poll_result":
                     game = await self.words_game.get_session_by_id(chat_id=text["chat_id"])
                     if game:
+                        result = None
+                        if not text["poll_type"]:
+                            result = await self.words_game.check_not_anonim_poll(game_session_id=game.id)
                         await self.words_game.update_game_session(game_id=game.id, poll_id=None)
-                        if text["poll_result"] == "yes":
+                        if text["poll_result"] == "yes" or result:
                             await self.right_word(game=game, word=text["word"])
                         else:
                             await self.pick_leader(game=game)
@@ -700,6 +709,32 @@ class Worker(CityGameMixin, WordGameMixin):
                 message=message_last_letter, routing_key=self.routing_key_sender
             )
 
+        async def handle_faq(self, upd: UpdateObj):
+            """Обработка команды /FAQ.
+            :param self: Экземпляр класса.
+            :param upd: Объект обновления.
+            :return:
+            """
+            if upd.message.chat.type != "private":
+                await self.rabbitMQ.send_event(
+                    message={
+                        "type_": "message",
+                        "chat_id": upd.message.chat.id,
+                        "text": faq_group.format(response=self.game_settings.response_time,
+                                                 life=3),
+                    },
+                    routing_key=self.routing_key_sender,
+                )
+            else:
+                await self.rabbitMQ.send_event(
+                    message={
+                        "type_": "message",
+                        "chat_id": upd.message.chat.id,
+                        "text": faq_solo
+                                },
+                    routing_key=self.routing_key_sender,
+                )
+
         try:
             match upd.message.text:
                 case "/play" if upd.message.chat.type == "private":
@@ -719,6 +754,8 @@ class Worker(CityGameMixin, WordGameMixin):
 
                 case "/stat":
                     await self.statistics(upd=upd)
+                case "/FAQ":
+                    await handle_faq(self, upd=upd)
                 case _ if upd.message.chat.type != "private" and await self.words_game.get_session_by_id(
                     chat_id=upd.message.chat.id
                 ):
@@ -804,3 +841,23 @@ class Worker(CityGameMixin, WordGameMixin):
             await self.rabbitMQ.send_event(
                 message=message_no_team, routing_key=self.routing_key_sender
             )
+
+    async def handle_poll_answer(self, upd: UpdateObj):
+        """
+        Обработка ответа на опрос.
+        :param upd: Объект обновления.
+        :return:
+        """
+        poll_id = upd.poll_answer.poll_id
+        player_id = upd.poll_answer.user.id
+        game = await self.words_game.get_game_session_by_poll_id(poll_id=poll_id)
+        if game:
+            if upd.poll_answer.option_ids:
+                answer = {0: True,
+                          1: False}.get(upd.poll_answer.option_ids[0], None)
+            else:
+                answer = None
+
+            await self.words_game.set_player_poll_answer(player_id=player_id,
+                                                         game_session_id=game.id,
+                                                         answer=answer)

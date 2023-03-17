@@ -28,6 +28,6 @@ ENV PATH="$PATH:$POETRY_HOME/bin"
 RUN poetry config virtualenvs.create false
 
 WORKDIR /code
-COPY poetry.lock pyproject.toml alembic.ini /code/
+COPY poetry.lock pyproject.toml alembic.ini starter.py /code/
 
 RUN poetry install --no-interaction --no-ansi

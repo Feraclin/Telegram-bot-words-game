@@ -1,26 +1,62 @@
 name: Deploy to vps
 on: [workflow_dispatch]
 jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: kts_pass
+          POSTGRES_USER: kts_user
+          POSTGRES_DB: kts
+        ports:
+          - 5432:5432
+      rabbitmq:
+        image: heidiks/rabbitmq-delayed-message-exchange:latest
+        env:
+          RABBITMQ_USER: admin
+          RABBITMQ_PASSWORD: password
+          RABBITMQ_HOST: rabbitmq
+          RABBITMQ_PORT: 5672
+        ports:
+          - 5672:5672
 
-    build-and-deploy:
-        runs-on: ubuntu-latest
-        steps:
+    steps:
 
-          - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
+      - uses: actions/checkout@master
 
-          - name: Deploy package
-            uses: appleboy/ssh-action@master
-            with:
-              host: ${{ secrets.VPS_HOST }}
-              port: 22
-              username: ${{ secrets.USER_VPS }}
-              password: ${{ secrets.USER_PWD }}
-              script: |
-                mkdir -p /home/tg_bot
-                cd /home/tg_bot
-                git init
-                git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/{{ github.event.repository.name }}.git
-                docker-compose down
-                docker-compose build
-                docker-compose up -d --force-recreate
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.11'
+      - name: Install requirements
+        run: pip install poetry && poetry install
+      - name: Migrate database
+        run: poetry run alembic upgrade head
+      - name: Run tests
+        run: pytest --cov=app
+
+#  build-and-deploy:
+#      runs-on: ubuntu-latest
+#      steps:
+#
+#        - uses: actions/checkout@v1
+#
+#
+#        - name: Deploy package
+#          uses: appleboy/ssh-action@master
+#          with:
+#            host: ${{ secrets.VPS_HOST }}
+#            port: 22
+#            username: ${{ secrets.USER_VPS }}
+#            password: ${{ secrets.USER_PWD }}
+#            script: |
+#              mkdir -p /home/tg_bot
+#              cd /home/tg_bot
+#              git init
+#              git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/{{ github.event.repository.name }}.git
+#              docker-compose down
+#              docker-compose build
+#              docker-compose up -d --force-recreate

@@ -47,14 +47,15 @@ class WGAccessor:
     update_team - обновление игрока в команде с указанным id, добавление указанного количества очков и раундов.
     get_team_by_game_id - получение списка игроков, которые использовались в игре.
     remove_life_from_player - удаление жизни игрока.
-    get_game_session_by_poll_id - получение игрока в игре по id команды.
+    get_game_session_by_poll_id - получение игры по id опроса.
     get_list_words_by_game_id - получение списка слов в игре.
     add_word - добавление слова.
     get_word_by_word - получение слова по слову.
     add_used_word - добавление слова в использованное в игре.
     get_player_list - получение списка игроков в игре.
     get_game_settings - получение настроек игры.
-
+    set_player_poll_answer - установка ответа на опрос.
+    check_not_anonim_poll - проверка результата опроса.
     """
 
     database: "Database"
@@ -345,21 +346,15 @@ class WGAccessor:
             .where(
                 UserGameSession.game_sessions_id == game_session_id,
                 UserGameSession.life > 0,
-                UserGameSession.player_id != player_id,
             )
             .group_by(UserGameSession.player_id)
         )
 
         res = await self.database.execute_query(query)
-        team_lst = res.scalars().all()
-        print(res)
-        return (
-            team_lst
-            if team_lst
-            else [
-                player_id,
-            ]
-        )
+        team_lst: list = res.scalars().all()
+        if len(team_lst) > 1:
+            team_lst.remove(player_id)
+        return team_lst
 
     async def remove_life_from_player(self, game_id: int, player_id: int, round_: int = 0) -> None:
         """
@@ -381,10 +376,10 @@ class WGAccessor:
 
     async def get_game_session_by_poll_id(self, poll_id: int) -> GameSession | None:
         """
-        Получение игрока в игре по id команды.
+        Получение игры по id опроса.
 
-        :param poll_id: id команды
-        :return: игрока
+        :param poll_id: id опроса
+        :return: игра
         """
         query = select(GameSession).where(GameSession.current_poll_id == poll_id)
         res = await self.database.execute_query(query)
@@ -478,3 +473,37 @@ class WGAccessor:
         )
         res = await self.database.execute_query(query)
         return res.scalar()
+
+    async def set_player_poll_answer(self,
+                                     game_session_id: int,
+                                     player_id: int,
+                                     answer: bool) -> None:
+        """
+        Установка ответа на опрос.
+        :param game_session_id: id игровой сессии
+        :param player_id: id игрока
+        :param answer: ответ на опрос
+        :return:
+        """
+        query = update(UserGameSession).where(UserGameSession.player_id == player_id,
+                                              UserGameSession.game_sessions_id == game_session_id)\
+            .values(poll_answer=answer)
+        res = await self.database.execute_query(query)
+        return
+
+    async def check_not_anonim_poll(self, game_session_id: int) -> bool:
+        """
+        Проверка результата опроса.
+        :param game_session_id: id игровой сессии
+        :return: bool
+        """
+        query = select(UserGameSession.poll_answer).where(UserGameSession.game_sessions_id == game_session_id)
+        res = await self.database.execute_query(query)
+        from collections import Counter
+        answer_lst = Counter(res.scalars().all())
+        query = update(UserGameSession).where(UserGameSession.game_sessions_id == game_session_id)\
+            .values(poll_answer=None)
+        if answer_lst[True] > answer_lst[False]:
+            return True
+        else:
+            return False
