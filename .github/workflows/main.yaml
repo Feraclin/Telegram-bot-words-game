@@ -27,31 +27,31 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install requirements
-        run: poetry install
+        run: pip install poetry == 1.4.0 && poetry install
       - name: Migrate database
         run: poetry run alembic upgrade head
       - name: Run tests
         run: pytest -cov=app
 
-  build-and-deploy:
-      runs-on: ubuntu-latest
-      steps:
-
-        - uses: actions/checkout@v1
-
-
-        - name: Deploy package
-          uses: appleboy/ssh-action@master
-          with:
-            host: ${{ secrets.VPS_HOST }}
-            port: 22
-            username: ${{ secrets.USER_VPS }}
-            password: ${{ secrets.USER_PWD }}
-            script: |
-              mkdir -p /home/tg_bot
-              cd /home/tg_bot
-              git init
-              git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/{{ github.event.repository.name }}.git
-              docker-compose down
-              docker-compose build
-              docker-compose up -d --force-recreate
+#  build-and-deploy:
+#      runs-on: ubuntu-latest
+#      steps:
+#
+#        - uses: actions/checkout@v1
+#
+#
+#        - name: Deploy package
+#          uses: appleboy/ssh-action@master
+#          with:
+#            host: ${{ secrets.VPS_HOST }}
+#            port: 22
+#            username: ${{ secrets.USER_VPS }}
+#            password: ${{ secrets.USER_PWD }}
+#            script: |
+#              mkdir -p /home/tg_bot
+#              cd /home/tg_bot
+#              git init
+#              git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/{{ github.event.repository.name }}.git
+#              docker-compose down
+#              docker-compose build
+#              docker-compose up -d --force-recreate
