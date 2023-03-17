@@ -266,6 +266,9 @@ class WordGameMixin(BaseMixin):
                 user_id=upd.message.from_.id,
                 chat_id=upd.message.chat.id,
                 chat_type=upd.message.chat.type,
+                response_time=self.game_settings.response_time,
+                anonymous_poll=self.game_settings.anonymous_poll,
+                poll_time=self.game_settings.poll_time,
             )
 
         message_create_team = {
@@ -366,7 +369,7 @@ class WordGameMixin(BaseMixin):
         await self.rabbitMQ.send_event(
             message=message_slow_player,
             routing_key=self.routing_key_worker,
-            delay=self.game_settings.response_time * 1000 if self.game_settings else 15000,
+            delay=game.response_time * 1000 if game.response_time else 15000,
         )
 
     async def check_word(self, upd: UpdateObj) -> None:
@@ -506,9 +509,9 @@ class WordGameMixin(BaseMixin):
             "chat_id": upd.message.chat.id,
             "question": f"Граждане примем ли мы {word} как допустимое слово?",
             "options": ["Yes", "No", "Слово?"],
-            "anonymous": self.game_settings.anonymous_poll if self.game_settings else False,
+            "anonymous": game.anonymous_poll if game.anonymous_poll else False,
             "game_id": game.id,
-            "period": self.game_settings.poll_time if self.game_settings else 10,
+            "period": game.poll_time if game.poll_time else 10,
         }
 
         await self.rabbitMQ.send_event(message=poll_message, routing_key=self.routing_key_sender)
@@ -530,6 +533,7 @@ class WordGameMixin(BaseMixin):
         if not game:
             return
         await self.words_game.update_game_session(game_id=game.id, status=False)
+        await self.words_game.update_total_points_to_user(game_id=game.id)
         await self.statistics(upd=upd, game=game)
 
 
@@ -823,8 +827,7 @@ class Worker(CityGameMixin, WordGameMixin):
             messages_played_city = {
                 "type_": "message",
                 "chat_id": game.chat_id,
-                "text": f"В этой игре участвовали: {' - '.join(city.name for city in cities)}",
-            }
+                "text": f"В этой игре участвовали: {' - '.join(city.name for city in cities)}"}
 
             await self.rabbitMQ.send_event(
                 message=messages_played_city, routing_key=self.routing_key_sender
@@ -836,7 +839,10 @@ class Worker(CityGameMixin, WordGameMixin):
                 "type_": "message",
                 "chat_id": game.chat_id,
                 "text": f"Игра окончена. "
-                f"{' - '.join(f'@{player[0]} - {player[1]}' for player in team_lst)}",
+                        f"Данные игры:\nВремя на ответ - {game.response_time}. \n"
+                        f"Вид опроса - {['Не анонимный', 'Анонимный'][game.anonymous_poll]}. \n"
+                        f"Время на опроса - {game.poll_time}. \n"
+                f"Статистика игроков: {' - '.join(f'@{player[0]} - {player[1]}' for player in team_lst)}",
             }
             await self.rabbitMQ.send_event(
                 message=message_no_team, routing_key=self.routing_key_sender

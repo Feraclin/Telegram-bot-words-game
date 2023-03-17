@@ -34,6 +34,9 @@ class GameSession(MappedAsDataclass, DB):
     is_active: Mapped[bool] = mapped_column(nullable=False, default=False)
     next_start_letter: Mapped[str] = mapped_column(default=None, nullable=True)
     current_poll_id: Mapped[bigint] = mapped_column(default=None, nullable=True)
+    response_time: Mapped[int] = mapped_column(nullable=False, default=15)
+    anonymous_poll: Mapped[bool] = mapped_column(nullable=False, default=True)
+    poll_time: Mapped[int] = mapped_column(nullable=False, default=15)
 
 
 class UserGameSession(MappedAsDataclass, DB):
