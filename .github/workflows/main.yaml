@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install requirements
-        run: pip install poetry == 1.4.0 && poetry install
+        run: pip install poetry=1.4.0 && poetry install
       - name: Migrate database
         run: poetry run alembic upgrade head
       - name: Run tests
