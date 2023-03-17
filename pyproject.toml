@@ -37,6 +37,7 @@ aioresponses = "^0.7.4"
 psycopg2-binary = "^2.8.6"
 aiosqlite = "^0.18.0"
 flake8 = "^6.0.0"
+pywin32 = "^305"
 
 [build-system]
 requires = ["poetry-core"]
