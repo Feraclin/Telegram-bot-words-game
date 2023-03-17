@@ -4,7 +4,7 @@ jobs:
   run_tests:
     runs-on: ubuntu-latest
     services:
-      postgres:
+      db:
         image: postgres
         env:
           POSTGRES_PASSWORD: kts_pass
@@ -12,13 +12,23 @@ jobs:
           POSTGRES_DB: kts
         ports:
           - 5432:5432
+      rabbitmq:
+        image: heidiks/rabbitmq-delayed-message-exchange:latest
+        env:
+          RABBITMQ_USER: admin
+          RABBITMQ_PASSWORD: password
+          RABBITMQ_HOST: rabbitmq
+          RABBITMQ_PORT: 5672
+        ports:
+          - 5672:5672
+
     steps:
 
       - uses: actions/checkout@v2
 #      - name: Postgres Backup Restore
 #        uses: tj-actions/pg-restore@v4.5
 #        with:
-#          database_url: "postgres://kts_user:kts_pass@postgres:5432/kts"
+#          database_url: "postgres://kts_user:kts_pass@db:5432/kts"
 #          backup_file: "db/init.sql"
 
       - uses: actions/checkout@master
