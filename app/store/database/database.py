@@ -81,6 +81,11 @@ class Database:
             session.add(model)
         await self.engine_.dispose()
 
+    async def add_all_query(self, lst_model: list) -> None:
+        async with self.session.begin() as session:
+            session.add_all(lst_model)
+        await self.engine_.dispose()
+
     async def disconnect(self, *_: list, **__: dict) -> None:
         try:
             if self.engine_:

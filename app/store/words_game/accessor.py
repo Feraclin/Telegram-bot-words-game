@@ -90,17 +90,32 @@ class WGAccessor:
         res = res.scalar()
         return res if res else None
 
-    async def create_game_session(self, user_id: int, chat_id: int, chat_type: str) -> GameSession:
+    async def create_game_session(self,
+                                  user_id: int,
+                                  chat_id: int,
+                                  chat_type: str,
+                                  response_time: int = 15,
+                                  anonymous_poll: bool = True,
+                                  poll_time: int = 15) -> GameSession:
         """
         Создание игровой сессии.
 
         :param user_id: id создателя сессии
         :param chat_id: id чата
         :param chat_type: тип чата
+        :param response_time: время ответа
+        :param anonymous_poll: анонимный опрос
+        :param poll_time: время опроса
         :return: созданная игровая сессия
         """
         query = insert(GameSession).values(
-            creator_id=user_id, chat_id=chat_id, game_type=chat_type, is_active=True
+            creator_id=user_id,
+            chat_id=chat_id,
+            game_type=chat_type,
+            is_active=True,
+            response_time=response_time,
+            poll_time=poll_time,
+            anonymous_poll=anonymous_poll,
         )
         res = await self.database.execute_query(query)
         return res.scalar()
@@ -503,7 +518,24 @@ class WGAccessor:
         answer_lst = Counter(res.scalars().all())
         query = update(UserGameSession).where(UserGameSession.game_sessions_id == game_session_id)\
             .values(poll_answer=None)
+        await self.database.execute_query(query)
         if answer_lst[True] > answer_lst[False]:
             return True
         else:
             return False
+
+    async def update_total_points_to_user(self, game_id):
+        """
+        Обновление очков игроков.
+        :param game_id: id игры
+        :return:
+        """
+        query = select(UserGameSession).where(UserGameSession.game_sessions_id == game_id)
+        team_lst = (await self.database.execute_query(query)).scalars().all()
+        team = []
+        for user in team_lst:
+            player = user.player
+            player.total_point += user.point
+            team.append(player)
+
+        await self.database.add_all_query(team)

@@ -51,7 +51,7 @@ Aiohttp_web представляет собой веб-интерфейс для
 ### миграции
 ```python
 poetry run alembic revision --autogenerate -m "name"
-poetry run alembic upgrade --head
+poetry run alembic upgrade head
 ```
 ### тестовое покрытие
 ```python
