@@ -55,7 +55,7 @@ class WGAccessor:
     get_player_list - получение списка игроков в игре.
     get_game_settings - получение настроек игры.
     set_player_poll_answer - установка ответа на опрос.
-
+    check_not_anonim_poll - проверка результата опроса.
     """
 
     database: "Database"
@@ -492,6 +492,11 @@ class WGAccessor:
         return
 
     async def check_not_anonim_poll(self, game_session_id: int) -> bool:
+        """
+        Проверка результата опроса.
+        :param game_session_id: id игровой сессии
+        :return: bool
+        """
         query = select(UserGameSession.poll_answer).where(UserGameSession.game_sessions_id == game_session_id)
         res = await self.database.execute_query(query)
         from collections import Counter
