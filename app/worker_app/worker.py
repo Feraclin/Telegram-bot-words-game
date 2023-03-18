@@ -712,12 +712,22 @@ class Worker(CityGameMixin, WordGameMixin):
             """
 
             game = await self.words_game.get_session_by_id(chat_id=upd.message.chat.id)
-
-            message_last_letter = {
-                "type_": "message",
-                "chat_id": upd.message.chat.id,
-                "text": f"Город на букву {game.next_start_letter}",
-            }
+            if game is None:
+                message_last_letter = {
+                    "type_": "message",
+                    "chat_id": upd.message.chat.id,
+                    "text": "Игра не начата",
+                }
+            else:
+                if upd.message.chat.type != "private":
+                    thing = "Слово"
+                else:
+                    thing = "Город"
+                message_last_letter = {
+                    "type_": "message",
+                    "chat_id": upd.message.chat.id,
+                    "text": f"{thing} на букву {game.next_start_letter}",
+                }
 
             await self.rabbitMQ.send_event(
                 message=message_last_letter, routing_key=self.routing_key_sender
