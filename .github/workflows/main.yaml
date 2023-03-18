@@ -11,6 +11,8 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_DB: kts
+          POSTGRES_HOST: db
+          POSTGRES_PORT: 5432
         ports:
           - 5432:5432
       rabbitmq:
@@ -53,8 +55,7 @@ jobs:
           script: |
             mkdir -p /home/tg_bot
             cd /home/tg_bot
-            git init
-            git pull https://feraclin:${{ secrets.DEPLOY_TOKEN }}@github.com/Feraclin/{{ github.event.repository.name }}.git
+            git pull origin master
             docker-compose down
             docker-compose build
             docker-compose up -d --force-recreate
