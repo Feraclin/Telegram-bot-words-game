@@ -1,6 +1,18 @@
 version: '3.5'
 
 services:
+  logstash:
+    image: logstash:7.17.9
+    restart: always
+    volumes:
+      - ./logstash/config:/usr/share/logstash/config
+    command: bash "touch /usr/share/logstash/config/logstash.yml"
+    ports:
+      - "5000:5000"
+    networks:
+      - kts_st_week3
+    privileged: true
+
   db:
     image: postgres
     restart: always
@@ -13,6 +25,12 @@ services:
       - ./init-kts-db.sh:/docker-entrypoint-initdb.d/init-kts-db.sh
     networks:
       - kts_st_week3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
 
   adminer:
     image: adminer
@@ -44,6 +62,12 @@ services:
       - "15673:15672"
     networks:
       - kts_st_week3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
 
 
   poller_app:
@@ -60,6 +84,12 @@ services:
       - rabbitmq
     networks:
       - kts_st_week3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
 
   worker_app:
     build:
@@ -73,6 +103,12 @@ services:
       - poller_app
     networks:
       - kts_st_week3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
 
   sender_app:
     build:
@@ -85,6 +121,12 @@ services:
       - .env_dev
     networks:
       - kts_st_week3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
 
   aiohttp_app:
     build:
@@ -102,6 +144,12 @@ services:
       - "8080:8080"
     networks:
       - kts_st_week3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
 
 volumes:
   pgdata:
