@@ -10,6 +10,7 @@ services:
       - '5434:5432'
     volumes:
       - pgdata:/data
+      - ./init-kts-db.sh:/docker-entrypoint-initdb.d/init-kts-db.sh
     networks:
       - kts_st_week3
 
@@ -18,6 +19,17 @@ services:
     restart: always
     ports:
       - '6080:8080'
+    networks:
+      - kts_st_week3
+
+  builder:
+    env_file:
+      - .env_dev
+    build:
+      context: .
+      dockerfile: ./compose/builder.Dockerfile
+    volumes:
+      - .:/app
     networks:
       - kts_st_week3
 
@@ -32,14 +44,6 @@ services:
       - "15673:15672"
     networks:
       - kts_st_week3
-
-  builder:
-    build:
-      context: .
-      dockerfile: ./compose/builder.Dockerfile
-    restart: always
-    env_file:
-      - .env_dev
 
 
   poller_app:
