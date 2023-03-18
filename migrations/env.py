@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
-
+from app.web.config import config as cfg
 from alembic import context
 
 from app.store.database import DB
@@ -30,6 +30,10 @@ target_metadata = DB.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+url = f"postgresql+asyncpg://{cfg.database.user}:{cfg.database.password}@{cfg.database.host}:{cfg.database.port}/{cfg.database.database}"
+
+config.set_main_option("sqlalchemy.url", url)
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -43,9 +47,9 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url_ = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=url_,
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,
