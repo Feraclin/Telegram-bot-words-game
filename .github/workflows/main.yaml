@@ -52,6 +52,7 @@ jobs:
           port: 22
           username: ${{ secrets.USER_VPS }}
           password: ${{ secrets.USER_PWD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             mkdir -p /home/tg_bot
             cd /home/tg_bot
