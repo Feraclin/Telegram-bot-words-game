@@ -734,7 +734,7 @@ class Worker(CityGameMixin, WordGameMixin):
             )
 
         async def handle_faq(self, upd: UpdateObj):
-            """Обработка команды /FAQ.
+            """Обработка команды /faq.
             :param self: Экземпляр класса.
             :param upd: Объект обновления.
             :return:
@@ -773,7 +773,7 @@ class Worker(CityGameMixin, WordGameMixin):
 
                 case "/stat":
                     await self.statistics(upd=upd)
-                case "/FAQ":
+                case "/faq":
                     await handle_faq(self, upd=upd)
                 case _ if upd.message.chat.type != "private" and await self.words_game.get_session_by_id(
                     chat_id=upd.message.chat.id
@@ -836,6 +836,18 @@ class Worker(CityGameMixin, WordGameMixin):
             game = await self.words_game.get_session_by_id(
                 chat_id=upd.message.chat.id, is_active=False
             )
+        if game is None:
+            messages_statistics = {
+                "type_": "message",
+                "chat_id": upd.message.chat.id,
+                "text": "Игр нет",
+            }
+            await self.rabbitMQ.send_event(
+                message=messages_statistics, routing_key=self.routing_key_sender
+            )
+            return
+        else:
+            if game.game_type
         if game.game_type == "private":
             cities = await self.words_game.get_city_list_by_session_id(game_session_id=game.id)
 
