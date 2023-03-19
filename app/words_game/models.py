@@ -5,6 +5,13 @@ from app.store.database.sqlalchemy_base import DB, bigint
 
 
 class User(MappedAsDataclass, DB):
+    """
+    Класс, представляющий пользователя.
+
+    :param id: Идентификатор пользователя.
+    :param username: Имя пользователя.
+    :param total_point: Общее количество очков пользователя.
+    """
     __tablename__ = "users"
 
     id: Mapped[bigint] = mapped_column(primary_key=True)
@@ -13,6 +20,25 @@ class User(MappedAsDataclass, DB):
 
 
 class GameSession(MappedAsDataclass, DB):
+    """
+    Класс, представляющий сессию игры.
+    :param id: Идентификатор сессии.
+    :param game_type: Тип игры.
+    :param chat_id: Идентификатор чата.
+    :param next_user_id: Идентификатор следующего игрока.
+    :param next_user: Следующий игрок.
+    :param creator_id: Идентификатор создателя игровой сессии.
+    :param creator: Создатель игровой сессии.
+    :param winner_id: Идентификатор победителя игры.
+    :param winner: Победитель игры.
+    :param is_active: Флаг активности игровой сессии.
+    :param next_start_letter: Следующая буква.
+    :param current_poll_id: Идентификатор текущего голосования.
+    :param response_time: Время на ответ пользователя.
+    :param anonymous_poll: Флаг анонимности голосования.
+    :param poll_time: Время на голосование.
+    :param life: Количество жизней.
+    """
     __tablename__ = "game_sessions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
