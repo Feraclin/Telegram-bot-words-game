@@ -846,8 +846,6 @@ class Worker(CityGameMixin, WordGameMixin):
                 message=messages_statistics, routing_key=self.routing_key_sender
             )
             return
-        else:
-            if game.game_type
         if game.game_type == "private":
             cities = await self.words_game.get_city_list_by_session_id(game_session_id=game.id)
 
