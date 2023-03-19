@@ -1,17 +1,15 @@
 version: '3.5'
 
 services:
-  logstash:
-    image: logstash:7.17.9
-    restart: always
+
+  fluentd:
+    image: fluent/fluentd:v1.15-1
     volumes:
-      - ./logstash/config:/usr/share/logstash/config
-    command: bash "touch /usr/share/logstash/config/logstash.yml"
+      - ./fluentd/conf:/fluentd/etc
+      - ./fluentd/logs:/fluentd/log
     ports:
-      - "5000:5000"
-    networks:
-      - kts_st_week3
-    privileged: true
+      - "24224:24224"
+      - "24224:24224/udp"
 
   db:
     image: postgres
@@ -25,12 +23,14 @@ services:
       - ./init-kts-db.sh:/docker-entrypoint-initdb.d/init-kts-db.sh
     networks:
       - kts_st_week3
+    depends_on:
+      - fluentd
     logging:
-      driver: "json-file"
+      driver: "fluentd"
       options:
-        max-size: "10m"
-        max-file: "3"
+        fluentd-address: localhost:24224
         tag: "{{.Name}}"
+
 
   adminer:
     image: adminer
@@ -62,11 +62,12 @@ services:
       - "15673:15672"
     networks:
       - kts_st_week3
+    depends_on:
+      - fluentd
     logging:
-      driver: "json-file"
+      driver: "fluentd"
       options:
-        max-size: "10m"
-        max-file: "3"
+        fluentd-address: localhost:24224
         tag: "{{.Name}}"
 
 
@@ -82,13 +83,13 @@ services:
       - builder
       - db
       - rabbitmq
+      - fluentd
     networks:
       - kts_st_week3
     logging:
-      driver: "json-file"
+      driver: "fluentd"
       options:
-        max-size: "10m"
-        max-file: "3"
+        fluentd-address: localhost:24224
         tag: "{{.Name}}"
 
   worker_app:
@@ -104,10 +105,9 @@ services:
     networks:
       - kts_st_week3
     logging:
-      driver: "json-file"
+      driver: "fluentd"
       options:
-        max-size: "10m"
-        max-file: "3"
+        fluentd-address: localhost:24224
         tag: "{{.Name}}"
 
   sender_app:
@@ -122,10 +122,9 @@ services:
     networks:
       - kts_st_week3
     logging:
-      driver: "json-file"
+      driver: "fluentd"
       options:
-        max-size: "10m"
-        max-file: "3"
+        fluentd-address: localhost:24224
         tag: "{{.Name}}"
 
   aiohttp_app:
@@ -140,15 +139,15 @@ services:
       - builder
       - db
       - rabbitmq
+      - fluentd
     ports:
       - "8080:8080"
     networks:
       - kts_st_week3
     logging:
-      driver: "json-file"
+      driver: "fluentd"
       options:
-        max-size: "10m"
-        max-file: "3"
+        fluentd-address: localhost:24224
         tag: "{{.Name}}"
 
 volumes:
