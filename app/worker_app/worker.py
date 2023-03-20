@@ -272,6 +272,7 @@ class WordGameMixin(BaseMixin):
                 life=self.game_settings.life,
             )
 
+
         message_create_team = {
             "type_": "message_keyboard",
             "chat_id": upd.message.chat.id,
@@ -292,6 +293,9 @@ class WordGameMixin(BaseMixin):
         :return:
         """
         game = await self.words_game.get_session_by_id(chat_id=upd.callback_query.message.chat.id)
+        player = await self.words_game.create_user(user_id=upd.callback_query.from_.id,
+                                                   username=upd.callback_query.from_.username)
+
         if game:
             await self.words_game.add_user_to_team(
                 game_id=game.id,
@@ -755,7 +759,7 @@ class Worker(CityGameMixin, WordGameMixin):
                 )
 
         try:
-            match upd.message.text:
+            match upd.message.text.split("@")[0]:
                 case "/play" if upd.message.chat.type == "private":
                     await self.start_game(upd=upd)
                 case "/play" if upd.message.chat.type != "private":
