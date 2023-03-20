@@ -75,6 +75,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/poller/Dockerfile
+    image: feraclin/tg_bot_words:poller
     restart: always
     env_file:
       - .env_dev
@@ -96,6 +97,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/worker/Dockerfile
+    image: feraclin/tg_bot_words:worker
     restart: always
     env_file:
       - .env_dev
@@ -114,11 +116,13 @@ services:
     build:
       context: .
       dockerfile: ./compose/sender/Dockerfile
+    image: feraclin/tg_bot_words:sender
+    restart: always
+    env_file:
+      - .env_dev
     command: bash -c "cd /code/app/sender_app/ && python main.py"
     depends_on:
       - worker_app
-    env_file:
-      - .env_dev
     networks:
       - kts_st_week3
     logging:
@@ -131,6 +135,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/aiohttp_web/Dockerfile
+    image: feraclin/tg_bot_words:aiohttp
     restart: always
     env_file:
       - .env_dev
