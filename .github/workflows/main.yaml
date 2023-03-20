@@ -61,10 +61,10 @@ jobs:
           context: .
           push: true
           tags: |
-            docker.io/username/poller:latest
-            docker.io/username/worker:latest
-            docker.io/username/sender:latest
-            docker.io/username/aiohttp:latest
+            docker.io/${{ secrets.DOCKER_USERNAME }}/tg_bot_words:poller
+            docker.io/${{ secrets.DOCKER_USERNAME }}/tg_bot_words:worker
+            docker.io/${{ secrets.DOCKER_USERNAME }}/tg_bot_words:sender
+            docker.io/${{ secrets.DOCKER_USERNAME }}/tg_bot_words:aiohttp
         secrets:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
