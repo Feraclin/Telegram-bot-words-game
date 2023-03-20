@@ -375,7 +375,7 @@ class WGAccessor:
 
         res = await self.database.execute_query(query)
         team_lst: list = res.scalars().all()
-        if len(team_lst) > 1:
+        if len(team_lst) > 1 and player_id is not None and player_id in team_lst:
             team_lst.remove(player_id)
         return team_lst
 
