@@ -19,7 +19,7 @@ class YandexDictAccessor:
                 if resp.status == 200 and (word := (await resp.json()).get("def", None)):
                     word = Word.Schema().load(word[0])
 
-                    return True if word.pos == "noun" else False
+                    return word.pos == "noun"
                 else:
                     return False
 
@@ -34,7 +34,7 @@ async def check_word(text: str, lang: str = "ru-ru") -> bool:
         async with session.get(url) as resp:
             if resp.status == 200 and (word := (await resp.json()).get("def", None)):
                 word = Word.Schema().load(word[0])
-                return True if word.pos == "noun" else False
+                return word.pos == "noun"
             else:
                 return False
 
